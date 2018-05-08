@@ -1,23 +1,19 @@
 // Copyright 2017 syzkaller project authors. All rights reserved.
 // Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
 
-package linux
+package ucore
 
 import (
 	"runtime"
 
 	"github.com/google/syzkaller/prog"
-	"github.com/google/syzkaller/sys/linux/gen"
+	"github.com/google/syzkaller/sys/ucore/gen"
 	"github.com/google/syzkaller/pkg/log"
 )
 
 func init() {
-	log.Logf(0, "init for linux!") ;
+	log.Logf(0, "init for ucore!") ;
 	prog.RegisterTarget(gen.Target_amd64, initTarget)
-	prog.RegisterTarget(gen.Target_386, initTarget)
-	prog.RegisterTarget(gen.Target_arm64, initTarget)
-	prog.RegisterTarget(gen.Target_arm, initTarget)
-	prog.RegisterTarget(gen.Target_ppc64le, initTarget)
 }
 
 func initTarget(target *prog.Target) {

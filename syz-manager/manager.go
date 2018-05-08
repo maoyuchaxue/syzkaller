@@ -117,23 +117,32 @@ type Crash struct {
 }
 
 func main() {
+	log.Logf(0, "Begin!")
 	if sys.GitRevision == "" {
 		log.Fatalf("Bad syz-manager build. Build with make, run bin/syz-manager.")
 	}
 	flag.Parse()
 	log.EnableLogCaching(1000, 1<<20)
+	// 这一步会对fuzzer, execprog, 和executor二进制文件进行检查，如果不存在即报错
+	log.Logf(0, "loading cfg file...")
 	cfg, err := mgrconfig.LoadFile(*flagConfig)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	// 建立一个目标操作系统的对象
+	log.Logf(0, "getting target OS...")
 	target, err := prog.GetTarget(cfg.TargetOS, cfg.TargetArch)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	//得到所有可以使用的syscall编号
+	log.Logf(0, "searching for avaliable syscalls...")
 	syscalls, err := mgrconfig.ParseEnabledSyscalls(target, cfg.Enable_Syscalls, cfg.Disable_Syscalls)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	log.Logf(0, "123") ;
+	// cfg:my.cfg输入的所有参数
 	initAllCover(cfg.TargetOS, cfg.TargetVMArch, cfg.Vmlinux)
 	RunManager(cfg, target, syscalls)
 }
@@ -143,6 +152,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 	// Type "none" is a special case for debugging/development when manager
 	// does not start any VMs, but instead you start them manually
 	// and start syz-fuzzer there.
+	// 建立起一个VM的结构
 	if cfg.Type != "none" {
 		env := mgrconfig.CreateVMEnv(cfg, *flagDebug)
 		var err error
@@ -180,6 +190,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 		usedFiles:       make(map[string]time.Time),
 	}
 
+	//建立corpus数据库
 	log.Logf(0, "loading corpus...")
 	var err error
 	mgr.corpusDB, err = db.Open(filepath.Join(cfg.Workdir, "corpus.db"))
@@ -242,6 +253,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 	log.Logf(0, "loaded %v programs (%v total, %v deleted)",
 		len(mgr.candidates), len(mgr.corpusDB.Records), deleted)
 
+	//由于fuzzer在运行的中途可能崩溃导致一些输入不能被成功测试，因此需要重新在运行一次。
 	// Now this is ugly.
 	// We duplicate all inputs in the corpus and shuffle the second part.
 	// This solves the following problem. A fuzzer can crash while triaging candidates,
@@ -254,6 +266,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 		j := i + rand.Intn(len(shuffle)-i)
 		shuffle[i], shuffle[j] = shuffle[j], shuffle[i]
 	}
+
 
 	// Create HTTP server.
 	mgr.initHTTP()
@@ -272,6 +285,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 		mgr.dash = dashapi.New(cfg.Dashboard_Client, cfg.Dashboard_Addr, cfg.Dashboard_Key)
 	}
 
+	// 时刻输出VM内的统计信息
 	go func() {
 		for lastTime := time.Now(); ; {
 			time.Sleep(10 * time.Second)
@@ -296,6 +310,7 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 		}
 	}()
 
+	//时刻输出全局统计信息
 	if *flagBench != "" {
 		f, err := os.OpenFile(*flagBench, os.O_WRONLY|os.O_CREATE|os.O_EXCL, osutil.DefaultFilePerm)
 		if err != nil {

@@ -12,6 +12,7 @@ import (
 	_ "github.com/google/syzkaller/sys/netbsd"
 	_ "github.com/google/syzkaller/sys/test"
 	_ "github.com/google/syzkaller/sys/windows"
+	_ "github.com/google/syzkaller/sys/ucore"
 )
 
 // Emitted by Makefile.

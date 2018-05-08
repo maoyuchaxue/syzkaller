@@ -67,6 +67,10 @@ type archConfig struct {
 }
 
 var archConfigs = map[string]archConfig{
+	"ucore/amd64": {
+		Qemu:     "qemu-system-x86_64",
+		QemuArgs: "-enable-kvm",
+	},
 	"linux/amd64": {
 		Qemu:     "qemu-system-x86_64",
 		QemuArgs: "-enable-kvm",
@@ -252,7 +256,7 @@ func (inst *instance) Boot() error {
 		)
 	} else {
 		args = append(args,
-			"-"+inst.cfg.Image_Device, inst.image,
+			"-drive", "file="+inst.image+",media=disk,cache=writeback,index=2",/*+inst.cfg.Image_Device, */
 			"-snapshot",
 		)
 	}
@@ -296,7 +300,7 @@ func (inst *instance) Boot() error {
 			)
 		} else {
 			cmdline = append(cmdline,
-				"root=/dev/sda",
+				//"root=/dev/sda",
 			)
 		}
 		cmdline = append(cmdline, inst.cfg.Cmdline)
@@ -309,8 +313,9 @@ func (inst *instance) Boot() error {
 		log.Logf(0, "running command: %v %#v", inst.cfg.Qemu, args)
 	}
 	qemu := osutil.Command(inst.cfg.Qemu, args...)
-	qemu.Stdout = inst.wpipe
-	qemu.Stderr = inst.wpipe
+	qemu.Stdout = os.Stdout
+	qemu.Stderr = os.Stdout//inst.wpipe
+	fmt.Printf("%v", args)
 	if err := qemu.Start(); err != nil {
 		return fmt.Errorf("failed to start %v %+v: %v", inst.cfg.Qemu, args, err)
 	}
