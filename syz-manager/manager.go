@@ -560,14 +560,17 @@ func (mgr *Manager) runInstance(index int) (*Crash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup port forwarding: %v", err)
 	}
+
+	// In our implementation, do not need inst.Copy
+
 	fuzzerBin, err := inst.Copy(mgr.cfg.SyzFuzzerBin)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy binary: %v", err)
-	}
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to copy binary: %v", err)
+	// }
 	executorBin, err := inst.Copy(mgr.cfg.SyzExecutorBin)
-	if err != nil {
-		return nil, fmt.Errorf("failed to copy binary: %v", err)
-	}
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to copy binary: %v", err)
+	// }
 
 	// Leak detection significantly slows down fuzzing, so detect leaks only on the first instance.
 	leak := mgr.cfg.Leak && index == 0
@@ -917,7 +920,8 @@ func (mgr *Manager) Connect(a *rpctype.ConnectArgs, r *rpctype.ConnectRes) error
 	}
 	r.Prios = mgr.prios
 	r.EnabledCalls = mgr.enabledSyscalls
-	r.NeedCheck = !mgr.vmChecked
+	// r.NeedCheck = !mgr.vmChecked
+	r.NeedCheck = false
 	r.MaxSignal = mgr.maxSignal.Serialize()
 	for i := 0; i < mgr.cfg.Procs && len(mgr.candidates) > 0; i++ {
 		last := len(mgr.candidates) - 1

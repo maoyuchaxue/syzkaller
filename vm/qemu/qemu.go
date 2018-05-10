@@ -39,6 +39,7 @@ type Config struct {
 	Image_Device string // qemu image device (hda by default)
 	CPU          int    // number of VM CPUs
 	Mem          int    // amount of VM memory in MBs
+	Kafl         int    // equals to 1 when kAFL enabled
 }
 
 type Pool struct {
@@ -68,7 +69,7 @@ type archConfig struct {
 
 var archConfigs = map[string]archConfig{
 	"ucore/amd64": {
-		Qemu:     "qemu-system-x86_64",
+		Qemu:     "qemu-system-x86_64-kafl",
 		QemuArgs: "-enable-kvm",
 	},
 	"linux/amd64": {
@@ -260,6 +261,12 @@ func (inst *instance) Boot() error {
 			"-snapshot",
 		)
 	}
+	if inst.cfg.Kafl == 1 {
+		args = append(args,
+			"-device", "kafl,bitmap_size=0,shm0=/dev/shm/kafl_qemu_binary_0,shm1=/dev/shm/kafl_qemu_payload_0,shm2=/dev/shm/kafl_qemu_coverage_0,bitmap=/dev/shm/kafl_bitmap_0",
+		)
+	}
+
 	if inst.cfg.Initrd != "" {
 		args = append(args,
 			"-initrd", inst.cfg.Initrd,
@@ -393,35 +400,36 @@ func (inst *instance) Forward(port int) (string, error) {
 }
 
 func (inst *instance) Copy(hostSrc string) (string, error) {
-	basePath := "/"
-	if inst.image == "9p" {
-		basePath = "/tmp"
-	}
-	vmDst := filepath.Join(basePath, filepath.Base(hostSrc))
-	args := append(inst.sshArgs("-P"), hostSrc, inst.sshuser+"@localhost:"+vmDst)
-	cmd := osutil.Command("scp", args...)
-	if inst.debug {
-		log.Logf(0, "running command: scp %#v", args)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stdout
-	}
-	if err := cmd.Start(); err != nil {
-		return "", err
-	}
-	done := make(chan bool)
-	go func() {
-		select {
-		case <-time.After(3 * time.Minute):
-			cmd.Process.Kill()
-		case <-done:
-		}
-	}()
-	err := cmd.Wait()
-	close(done)
-	if err != nil {
-		return "", err
-	}
-	return vmDst, nil
+	// basePath := "/"
+	// if inst.image == "9p" {
+	// 	basePath = "/tmp"
+	// }
+	// vmDst := filepath.Join(basePath, filepath.Base(hostSrc))
+	// args := append(inst.sshArgs("-P"), hostSrc, inst.sshuser+"@localhost:"+vmDst)
+	// cmd := osutil.Command("scp", args...)
+	// if inst.debug {
+	// 	log.Logf(0, "running command: scp %#v", args)
+	// 	cmd.Stdout = os.Stdout
+	// 	cmd.Stderr = os.Stdout
+	// }
+	// if err := cmd.Start(); err != nil {
+	// 	return "", err
+	// }
+	// done := make(chan bool)
+	// go func() {
+	// 	select {
+	// 	case <-time.After(3 * time.Minute):
+	// 		cmd.Process.Kill()
+	// 	case <-done:
+	// 	}
+	// }()
+	// err := cmd.Wait()
+	// close(done)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// return vmDst, nil
+	return hostSrc, nil
 }
 
 func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command string) (<-chan []byte, <-chan error, error) {
@@ -431,11 +439,13 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 	}
 	inst.merger.Add("ssh", rpipe)
 
-	args := append(inst.sshArgs("-p"), inst.sshuser+"@localhost", command)
-	if inst.debug {
-		log.Logf(0, "running command: ssh %#v", args)
-	}
-	cmd := osutil.Command("ssh", args...)
+	// args := append(inst.sshArgs("-p"), inst.sshuser+"@localhost", command)
+	// if inst.debug {
+	// 	log.Logf(0, "running command: ssh %#v", args)
+	// }
+	// cmd := osutil.Command("ssh", args...)
+	log.Logf(0, "running command: %v", command)
+	cmd := osutil.Command(command)
 	cmd.Stdout = wpipe
 	cmd.Stderr = wpipe
 	if err := cmd.Start(); err != nil {

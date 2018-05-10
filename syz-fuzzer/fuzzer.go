@@ -178,10 +178,10 @@ func main() {
 	// CONFIG_FAULT_INJECTION_DEBUG_FS is not enabled.
 	// Also need to move this somewhere else (to linux-specific part).
 	faultInjectionEnabled := false
-	if fd, err := syscall.Open("/proc/self/fail-nth", syscall.O_RDWR, 0); err == nil {
-		syscall.Close(fd)
-		faultInjectionEnabled = true
-	}
+	// if fd, err := syscall.Open("/proc/self/fail-nth", syscall.O_RDWR, 0); err == nil {
+	// 	syscall.Close(fd)
+	// 	faultInjectionEnabled = true
+	// }
 
 	if calls[target.SyscallMap["syz_emit_ethernet"]] ||
 		calls[target.SyscallMap["syz_extract_tcp_res"]] {
