@@ -34,6 +34,7 @@ func NewRPCServer(addr string, receiver interface{}) (*RPCServer, error) {
 func (serv *RPCServer) Serve() {
 	for {
 		conn, err := serv.ln.Accept()
+		log.Logf(0, "receiving rpc connection")
 		if err != nil {
 			log.Logf(0, "failed to accept an rpc connection: %v", err)
 			continue

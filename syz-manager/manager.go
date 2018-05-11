@@ -551,6 +551,9 @@ func (mgr *Manager) vmLoop() {
 func (mgr *Manager) runInstance(index int) (*Crash, error) {
 	mgr.checkUsedFiles()
 	inst, err := mgr.vmPool.Create(index)
+
+	log.Logf(0, "instance created ..")
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create instance: %v", err)
 	}
@@ -560,6 +563,7 @@ func (mgr *Manager) runInstance(index int) (*Crash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup port forwarding: %v", err)
 	}
+	log.Logf(0, "instance created ...")
 
 	// In our implementation, do not need inst.Copy
 
@@ -585,10 +589,16 @@ func (mgr *Manager) runInstance(index int) (*Crash, error) {
 	start := time.Now()
 	atomic.AddUint32(&mgr.numFuzzing, 1)
 	defer atomic.AddUint32(&mgr.numFuzzing, ^uint32(0))
+	// cmd := fmt.Sprintf("%v -executor=%v -name=vm-%v -arch=%v -manager=%v -procs=%v"+
+	// 	" -leak=%v -cover=%v -sandbox=%v -debug=%v -v=%d",
+	// 	fuzzerBin, executorBin, index, mgr.cfg.TargetArch, fwdAddr, procs,
+	// 	leak, mgr.cfg.Cover, mgr.cfg.Sandbox, *flagDebug, fuzzerV)
 	cmd := fmt.Sprintf("%v -executor=%v -name=vm-%v -arch=%v -manager=%v -procs=%v"+
-		" -leak=%v -cover=%v -sandbox=%v -debug=%v -v=%d",
+		" -leak=%v -cover=%v -sandbox=%v -debug=true -v=%d",
 		fuzzerBin, executorBin, index, mgr.cfg.TargetArch, fwdAddr, procs,
-		leak, mgr.cfg.Cover, mgr.cfg.Sandbox, *flagDebug, fuzzerV)
+		leak, mgr.cfg.Cover, mgr.cfg.Sandbox, fuzzerV)
+
+	log.Logf(0, "cmd: %v", cmd)
 	outc, errc, err := inst.Run(time.Hour, mgr.vmStop, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run fuzzer: %v", err)

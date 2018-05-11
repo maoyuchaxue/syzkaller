@@ -173,6 +173,7 @@ func (pool *Pool) Create(workdir string, index int) (vmimpl.Instance, error) {
 	for i := 0; ; i++ {
 		inst, err := pool.ctor(workdir, sshkey, sshuser, index)
 		if err == nil {
+			log.Logf(0, "qemu.Create finished")
 			return inst, nil
 		}
 		// Older qemu prints "could", newer -- "Could".
@@ -184,6 +185,7 @@ func (pool *Pool) Create(workdir string, index int) (vmimpl.Instance, error) {
 }
 
 func (pool *Pool) ctor(workdir, sshkey, sshuser string, index int) (vmimpl.Instance, error) {
+	log.Logf(0, "ctor started")
 	inst := &instance{
 		cfg:     pool.cfg,
 		image:   pool.env.Image,
@@ -210,6 +212,7 @@ func (pool *Pool) ctor(workdir, sshkey, sshuser string, index int) (vmimpl.Insta
 	}
 
 	closeInst = nil
+	log.Logf(0, "ctor finished")
 	return inst, nil
 }
 
@@ -354,6 +357,8 @@ func (inst *instance) Boot() error {
 		}
 	}()
 
+	log.Logf(0, "vm created now, wait qemu")
+
 	// Wait for the qemu asynchronously.
 	inst.waiterC = make(chan error, 1)
 	go func() {
@@ -361,37 +366,42 @@ func (inst *instance) Boot() error {
 		inst.waiterC <- err
 	}()
 
+	log.Logf(0, "wait ssh server to come up")
 	// Wait for ssh server to come up.
 	time.Sleep(5 * time.Second)
-	start := time.Now()
+	// start := time.Now()
 	for {
-		c, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%v", inst.port), 1*time.Second)
-		if err == nil {
-			c.SetDeadline(time.Now().Add(1 * time.Second))
-			var tmp [1]byte
-			n, err := c.Read(tmp[:])
-			c.Close()
-			if err == nil && n > 0 {
-				break // ssh is up and responding
-			}
-			time.Sleep(3 * time.Second)
-		}
-		select {
-		case err := <-inst.waiterC:
-			inst.waiterC <- err     // repost it for Close
-			time.Sleep(time.Second) // wait for any pending output
-			bootOutputStop <- true
-			<-bootOutputStop
-			return vmimpl.BootError{Title: "qemu stopped", Output: bootOutput}
-		default:
-		}
-		if time.Since(start) > 10*time.Minute {
-			bootOutputStop <- true
-			<-bootOutputStop
-			return vmimpl.BootError{Title: "ssh server did not start", Output: bootOutput}
-		}
+		break // we don't need ssh in vm at all
+
+		// c, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%v", inst.port), 1*time.Second)
+		// if err == nil {
+		// 	c.SetDeadline(time.Now().Add(1 * time.Second))
+		// 	var tmp [1]byte
+		// 	n, err := c.Read(tmp[:])
+		// 	c.Close()
+		// 	if err == nil && n > 0 {
+		// 		break // ssh is up and responding
+		// 	}
+		// 	time.Sleep(3 * time.Second)
+		// }
+		// select {
+		// case err := <-inst.waiterC:
+		// 	inst.waiterC <- err     // repost it for Close
+		// 	time.Sleep(time.Second) // wait for any pending output
+		// 	bootOutputStop <- true
+		// 	<-bootOutputStop
+		// 	return vmimpl.BootError{Title: "qemu stopped", Output: bootOutput}
+		// default:
+		// }
+		// if time.Since(start) > 10*time.Minute {
+		// 	bootOutputStop <- true
+		// 	<-bootOutputStop
+		// 	return vmimpl.BootError{Title: "ssh server did not start", Output: bootOutput}
+		// }
 	}
 	bootOutputStop <- true
+
+	log.Logf(0, "wait ssh server to come up finished")
 	return nil
 }
 
@@ -445,40 +455,49 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 	// }
 	// cmd := osutil.Command("ssh", args...)
 	log.Logf(0, "running command: %v", command)
-	cmd := osutil.Command(command)
+
+	cmds := strings.Split(command, " ")
+	name := cmds[0]
+	args := cmds[1:]
+
+	cmd := osutil.Command(name, args...)
 	cmd.Stdout = wpipe
 	cmd.Stderr = wpipe
 	if err := cmd.Start(); err != nil {
-		wpipe.Close()
+		// wpipe.Close()
 		return nil, nil, err
 	}
-	wpipe.Close()
+	// wpipe.Close()
 	errc := make(chan error, 1)
-	signal := func(err error) {
-		select {
-		case errc <- err:
-		default:
-		}
-	}
+	// signal := func(err error) {
+	// 	select {
+	// 	case errc <- err:
+	// 	default:
+	// 	}
+	// }
 
 	go func() {
 		select {
-		case <-time.After(timeout):
-			signal(vmimpl.ErrTimeout)
-		case <-stop:
-			signal(vmimpl.ErrTimeout)
+		// case <-time.After(timeout):
+		// 	signal(vmimpl.ErrTimeout)
+		// case <-stop:
+		// 	signal(vmimpl.ErrTimeout)
 		case err := <-inst.merger.Err:
-			cmd.Process.Kill()
+			// cmd.Process.Kill()
+			// log.Logf(0, "instance get killed!")
 			if cmdErr := cmd.Wait(); cmdErr == nil {
 				// If the command exited successfully, we got EOF error from merger.
 				// But in this case no error has happened and the EOF is expected.
 				err = nil
+			} else {
+				log.Logf(0, "inst get error: %v", err)
 			}
-			signal(err)
+
+			// signal(err)
 			return
 		}
-		cmd.Process.Kill()
-		cmd.Wait()
+		// cmd.Process.Kill()
+		// cmd.Wait()
 	}()
 	return inst.merger.Output, errc, nil
 }
