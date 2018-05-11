@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 )
 
 type OutputMerger struct {
@@ -53,6 +54,7 @@ func (merger *OutputMerger) AddDecoder(name string, r io.ReadCloser,
 		var proto []byte
 		var buf [4 << 10]byte
 		for {
+			time.Sleep(5 * time.Second)
 			n, err := r.Read(buf[:])
 			if n != 0 {
 				if decoder != nil {
@@ -62,7 +64,7 @@ func (merger *OutputMerger) AddDecoder(name string, r io.ReadCloser,
 					if len(decoded) != 0 {
 						merger.Output <- decoded // note: this can block
 					}
-				}
+				}	
 				pending = append(pending, buf[:n]...)
 				if pos := bytes.LastIndexByte(pending, '\n'); pos != -1 {
 					out := pending[:pos+1]
@@ -80,26 +82,29 @@ func (merger *OutputMerger) AddDecoder(name string, r io.ReadCloser,
 				}
 			}
 			if err != nil {
-				if len(pending) != 0 {
-					pending = append(pending, '\n')
-					if merger.tee != nil {
-						merger.teeMu.Lock()
-						merger.tee.Write(pending)
-						merger.teeMu.Unlock()
-					}
-					select {
-					case merger.Output <- pending:
-					default:
-					}
+				fmt.Printf("merger error: %v\n", err)
+			// 	if len(pending) != 0 {
+			// 		pending = append(pending, '\n')
+			// 		if merger.tee != nil {
+			// 			merger.teeMu.Lock()
+			// 			merger.tee.Write(pending)
+			// 			merger.teeMu.Unlock()
+			// 		}
+			// 		select {
+			// 		case merger.Output <- pending:
+			// 		default:
+			// 		}
 				}
-				r.Close()
-				select {
-				case merger.Err <- MergerError{name, r, err}:
-				default:
-				}
-				merger.wg.Done()
-				return
-			}
+
+			time.Sleep(2 * time.Second)
+				// r.Close()
+				// select {
+				// case merger.Err <- MergerError{name, r, err}:
+				// default:
+				// }
+				// merger.wg.Done()
+				// return
+			// }
 		}
 	}()
 }

@@ -247,7 +247,7 @@ func (inst *instance) Boot() error {
 		"-m", strconv.Itoa(inst.cfg.Mem),
 		"-smp", strconv.Itoa(inst.cfg.CPU),
 		"-net", "nic",
-		"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port),
+		"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port+1),
 		"-display", "none",
 		"-serial", "stdio",
 		"-no-reboot",
@@ -368,7 +368,7 @@ func (inst *instance) Boot() error {
 
 	log.Logf(0, "wait ssh server to come up")
 	// Wait for ssh server to come up.
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	// start := time.Now()
 	for {
 		break // we don't need ssh in vm at all
@@ -406,7 +406,7 @@ func (inst *instance) Boot() error {
 }
 
 func (inst *instance) Forward(port int) (string, error) {
-	return fmt.Sprintf("%v:%v", hostAddr, port), nil
+	return fmt.Sprintf("%v:%v", "127.0.0.1", port), nil
 }
 
 func (inst *instance) Copy(hostSrc string) (string, error) {
@@ -469,19 +469,19 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 	}
 	// wpipe.Close()
 	errc := make(chan error, 1)
-	// signal := func(err error) {
-	// 	select {
-	// 	case errc <- err:
-	// 	default:
-	// 	}
-	// }
+	signal := func(err error) {
+		select {
+		case errc <- err:
+		default:
+		}
+	}
 
 	go func() {
 		select {
-		// case <-time.After(timeout):
-		// 	signal(vmimpl.ErrTimeout)
-		// case <-stop:
-		// 	signal(vmimpl.ErrTimeout)
+		case <-time.After(timeout):
+			signal(vmimpl.ErrTimeout)
+		case <-stop:
+			signal(vmimpl.ErrTimeout)
 		case err := <-inst.merger.Err:
 			// cmd.Process.Kill()
 			// log.Logf(0, "instance get killed!")
@@ -490,14 +490,15 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 				// But in this case no error has happened and the EOF is expected.
 				err = nil
 			} else {
+				log.Logf(0, "inst get cmd error: %v", cmdErr)
 				log.Logf(0, "inst get error: %v", err)
+				cmd.Process.Kill()
 			}
 
-			// signal(err)
+			signal(err)
 			return
 		}
-		// cmd.Process.Kill()
-		// cmd.Wait()
+		cmd.Wait()
 	}()
 	return inst.merger.Output, errc, nil
 }

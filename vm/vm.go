@@ -191,7 +191,8 @@ func MonitorExecution(outc <-chan []byte, errc <-chan error, reporter report.Rep
 				return extractError("lost connection to test machine")
 			}
 		case out := <-outc:
-			fmt.Println(string(out))
+			// fmt.Printf("fuzzer-out: ")
+			// fmt.Println(string(out))
 			output = append(output, out...)
 			// syz-fuzzer output
 			if bytes.Contains(output[matchPos:], []byte("executing program")) {
