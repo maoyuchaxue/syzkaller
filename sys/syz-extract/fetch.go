@@ -18,6 +18,7 @@ import (
 )
 
 func extract(info *compiler.ConstInfo, cc string, args []string, addSource string, declarePrintf bool) (map[string]uint64, map[string]bool, error) {
+	fmt.Printf("%v\n", "extracting")
 	data := &CompileData{
 		AddSource:     addSource,
 		Defines:       info.Defines,
@@ -97,6 +98,7 @@ type CompileData struct {
 }
 
 func compile(cc string, args []string, data *CompileData) (bin string, out []byte, err error) {
+	fmt.Printf("print!!\n")
 	srcFile, err := ioutil.TempFile("", "")
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create temp file: %v", err)
@@ -104,11 +106,13 @@ func compile(cc string, args []string, data *CompileData) (bin string, out []byt
 	srcFile.Close()
 	os.Remove(srcFile.Name())
 	srcName := srcFile.Name() + ".c"
+	fmt.Printf("%v\n", srcName)
 	defer os.Remove(srcName)
 	src := new(bytes.Buffer)
 	if err := srcTemplate.Execute(src, data); err != nil {
 		return "", nil, fmt.Errorf("failed to generate source: %v", err)
 	}
+	fmt.Printf("%v\n", src.String())
 	if err := ioutil.WriteFile(srcName, src.Bytes(), 0600); err != nil {
 		return "", nil, fmt.Errorf("failed to write source file: %v", err)
 	}

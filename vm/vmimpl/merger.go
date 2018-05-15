@@ -64,7 +64,7 @@ func (merger *OutputMerger) AddDecoder(name string, r io.ReadCloser,
 					if len(decoded) != 0 {
 						merger.Output <- decoded // note: this can block
 					}
-				}	
+				}
 				pending = append(pending, buf[:n]...)
 				if pos := bytes.LastIndexByte(pending, '\n'); pos != -1 {
 					out := pending[:pos+1]
@@ -83,27 +83,27 @@ func (merger *OutputMerger) AddDecoder(name string, r io.ReadCloser,
 			}
 			if err != nil {
 				fmt.Printf("merger error: %v\n", err)
-			// 	if len(pending) != 0 {
-			// 		pending = append(pending, '\n')
-			// 		if merger.tee != nil {
-			// 			merger.teeMu.Lock()
-			// 			merger.tee.Write(pending)
-			// 			merger.teeMu.Unlock()
-			// 		}
-			// 		select {
-			// 		case merger.Output <- pending:
-			// 		default:
-			// 		}
-				}
+				// 	if len(pending) != 0 {
+				// 		pending = append(pending, '\n')
+				// 		if merger.tee != nil {
+				// 			merger.teeMu.Lock()
+				// 			merger.tee.Write(pending)
+				// 			merger.teeMu.Unlock()
+				// 		}
+				// 		select {
+				// 		case merger.Output <- pending:
+				// 		default:
+				// 		}
+			}
 
 			time.Sleep(2 * time.Second)
-				// r.Close()
-				// select {
-				// case merger.Err <- MergerError{name, r, err}:
-				// default:
-				// }
-				// merger.wg.Done()
-				// return
+			// r.Close()
+			// select {
+			// case merger.Err <- MergerError{name, r, err}:
+			// default:
+			// }
+			// merger.wg.Done()
+			// return
 			// }
 		}
 	}()

@@ -100,6 +100,18 @@ var List = map[string]map[string]*Target{
 			KernelHeaderArch: "powerpc",
 		},
 	},
+	"ucore": map[string]*Target{
+		"amd64": {
+			PtrSize:          8,
+			PageSize:         4 << 10,
+			CArch:            []string{"__x86_64__"},
+			CFlags:           []string{"-m64"},
+			CrossCFlags:      []string{"-m64"},
+			CCompilerPrefix:  "x86_64-linux-gnu-",
+			KernelArch:       "x86_64",
+			KernelHeaderArch: "x86",
+		},
+	},
 	"freebsd": map[string]*Target{
 		"amd64": {
 			PtrSize:  8,

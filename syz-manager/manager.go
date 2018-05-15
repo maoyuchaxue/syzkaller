@@ -141,7 +141,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
-	log.Logf(0, "123") ;
+	log.Logf(0, "123")
 	// cfg:my.cfg输入的所有参数
 	initAllCover(cfg.TargetOS, cfg.TargetVMArch, cfg.Vmlinux)
 	RunManager(cfg, target, syscalls)
@@ -266,7 +266,6 @@ func RunManager(cfg *mgrconfig.Config, target *prog.Target, syscalls map[int]boo
 		j := i + rand.Intn(len(shuffle)-i)
 		shuffle[i], shuffle[j] = shuffle[j], shuffle[i]
 	}
-
 
 	// Create HTTP server.
 	mgr.initHTTP()

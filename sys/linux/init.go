@@ -6,13 +6,13 @@ package linux
 import (
 	"runtime"
 
+	"github.com/google/syzkaller/pkg/log"
 	"github.com/google/syzkaller/prog"
 	"github.com/google/syzkaller/sys/linux/gen"
-	"github.com/google/syzkaller/pkg/log"
 )
 
 func init() {
-	log.Logf(0, "init for linux!") ;
+	log.Logf(0, "init for linux!")
 	prog.RegisterTarget(gen.Target_amd64, initTarget)
 	prog.RegisterTarget(gen.Target_386, initTarget)
 	prog.RegisterTarget(gen.Target_arm64, initTarget)

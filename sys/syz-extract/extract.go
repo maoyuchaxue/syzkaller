@@ -62,6 +62,7 @@ var oses = map[string]OS{
 	"android": new(linux),
 	"fuchsia": new(fuchsia),
 	"windows": new(windows),
+	"ucore":   new(ucore),
 }
 
 func main() {
@@ -256,6 +257,8 @@ func processArch(OS OS, arch *Arch) (map[string]*compiler.ConstInfo, error) {
 func processFile(OS OS, arch *Arch, file *File) (map[string]uint64, map[string]bool, error) {
 	inname := filepath.Join("sys", arch.target.OS, file.name)
 	outname := strings.TrimSuffix(inname, ".txt") + "_" + arch.target.Arch + ".const"
+	fmt.Printf("%v\n", inname)
+	fmt.Printf("%v\n", outname)
 	if file.info == nil {
 		return nil, nil, fmt.Errorf("input file %v is missing", inname)
 	}
@@ -264,6 +267,7 @@ func processFile(OS OS, arch *Arch, file *File) (map[string]uint64, map[string]b
 		return nil, nil, nil
 	}
 	consts, undeclared, err := OS.processFile(arch, file.info)
+	fmt.Printf("%v\n", consts)
 	if err != nil {
 		return nil, nil, err
 	}

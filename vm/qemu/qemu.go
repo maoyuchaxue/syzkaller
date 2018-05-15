@@ -260,7 +260,7 @@ func (inst *instance) Boot() error {
 		)
 	} else {
 		args = append(args,
-			"-drive", "file="+inst.image+",media=disk,cache=writeback,index=2",/*+inst.cfg.Image_Device, */
+			"-drive", "file="+inst.image+",media=disk,cache=writeback,index=2", /*+inst.cfg.Image_Device, */
 			"-snapshot",
 		)
 	}
@@ -309,9 +309,8 @@ func (inst *instance) Boot() error {
 				"init="+filepath.Join(inst.workdir, "init.sh"),
 			)
 		} else {
-			cmdline = append(cmdline,
-				//"root=/dev/sda",
-			)
+			cmdline = append(cmdline)//"root=/dev/sda",
+
 		}
 		cmdline = append(cmdline, inst.cfg.Cmdline)
 		args = append(args,
@@ -324,7 +323,7 @@ func (inst *instance) Boot() error {
 	}
 	qemu := osutil.Command(inst.cfg.Qemu, args...)
 	qemu.Stdout = os.Stdout
-	qemu.Stderr = os.Stdout//inst.wpipe
+	qemu.Stderr = os.Stdout //inst.wpipe
 	fmt.Printf("%v", args)
 	if err := qemu.Start(); err != nil {
 		return fmt.Errorf("failed to start %v %+v: %v", inst.cfg.Qemu, args, err)

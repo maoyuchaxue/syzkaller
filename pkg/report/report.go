@@ -73,7 +73,7 @@ var ctors = map[string]fn{
 	"netbsd":  ctorNetbsd,
 	"fuchsia": ctorFuchsia,
 	"windows": ctorWindows,
-	"ucore": ctorUcore,
+	"ucore":   ctorUcore,
 }
 
 type fn func(string, string, map[string][]symbolizer.Symbol, []*regexp.Regexp) (Reporter, error)
