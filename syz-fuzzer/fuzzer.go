@@ -99,6 +99,7 @@ func main() {
 
 	var (
 		flagName    = flag.String("name", "test", "unique name for manager")
+		flagOS      = flag.String("os", "ucore", "target os")
 		flagArch    = flag.String("arch", runtime.GOARCH, "target arch")
 		flagManager = flag.String("manager", "", "manager rpc address")
 		flagProcs   = flag.Int("procs", 1, "number of parallel test processes")
@@ -124,7 +125,7 @@ func main() {
 	}
 	log.Logf(0, "fuzzer started")
 
-	target, err := prog.GetTarget(runtime.GOOS, *flagArch)
+	target, err := prog.GetTarget(*flagOS, *flagArch)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -384,6 +385,8 @@ func (fuzzer *Fuzzer) pollLoop() {
 func buildCallList(target *prog.Target, enabledCalls []int, sandbox string) (map[*prog.Syscall]bool, []rpctype.SyscallReason) {
 	calls := make(map[*prog.Syscall]bool)
 	for _, n := range enabledCalls {
+		log.Logf(0, "enabled syscall: %v", target.Syscalls[n].Name)
+		log.Logf(0, "enabled syscall /2: %v", target.Syscalls[n].CallName)
 		if n >= len(target.Syscalls) {
 			log.Fatalf("invalid enabled syscall: %v", n)
 		}
@@ -396,6 +399,7 @@ func buildCallList(target *prog.Target, enabledCalls []int, sandbox string) (map
 		log.Fatalf("failed to detect host supported syscalls: %v", err)
 	}
 	for c := range calls {
+		log.Logf(0, "supported syscalls: %v", c.Name)
 		if reason, ok := unsupported[c]; ok {
 			log.Logf(1, "unsupported syscall: %v: %v", c.Name, reason)
 			disabled = append(disabled, rpctype.SyscallReason{

@@ -309,7 +309,7 @@ func (inst *instance) Boot() error {
 				"init="+filepath.Join(inst.workdir, "init.sh"),
 			)
 		} else {
-			cmdline = append(cmdline)//"root=/dev/sda",
+			cmdline = append(cmdline) //"root=/dev/sda",
 
 		}
 		cmdline = append(cmdline, inst.cfg.Cmdline)

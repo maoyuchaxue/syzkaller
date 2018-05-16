@@ -3,7 +3,7 @@
 
 // +build linux
 
-package linux
+package ucore
 
 import (
 	"flag"
