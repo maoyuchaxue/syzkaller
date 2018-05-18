@@ -266,7 +266,7 @@ func (inst *instance) Boot() error {
 	}
 	if inst.cfg.Kafl == 1 {
 		args = append(args,
-			"-device", "kafl,bitmap_size=0,shm0=/dev/shm/kafl_qemu_binary_0,shm1=/dev/shm/kafl_qemu_payload_0,shm2=/dev/shm/kafl_qemu_coverage_0,bitmap=/dev/shm/kafl_bitmap_0",
+			"-device", "kafl,bitmap_size=0,shm0=/dev/shm/kafl_qemu_binary_0,shm1=/dev/shm/kafl_qemu_payload_0,shm2=/dev/shm/kafl_qemu_coverage_0,inpipe=/dev/shm/kafl_qemu_inpipe_0,outpipe=/dev/shm/kafl_qemu_outpipe_0,bitmap=/dev/shm/kafl_bitmap_0",
 		)
 	}
 
