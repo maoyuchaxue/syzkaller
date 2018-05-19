@@ -194,7 +194,7 @@ func MakeEnv(config *Config, pid int) (*Env, error) {
 	var inmem, outmem []byte
 	if config.Flags&FlagUseShmem != 0 {
 		var err error
-		inf, inmem, err = osutil.CreateMemMappedFile(prog.ExecBufferSize)
+		inf, inmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_payload_0", 16 * 1024 * 1024)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,7 @@ func MakeEnv(config *Config, pid int) (*Env, error) {
 				osutil.CloseMemMappedFile(inf, inmem)
 			}
 		}()
-		outf, outmem, err = osutil.CreateMemMappedFile(outputSize)
+		outf, outmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_coverage_0", 16 * 1024 * 1024)
 		if err != nil {
 			return nil, err
 		}
@@ -560,40 +560,40 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 	defer wp.Close()
 
 	// executor->ipc command pipe.
-	inrp, inwp, err := os.Pipe()
+	// inrp, inwp, err := os.Pipe()
+	inrp, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_outpipe_0", 128 * 1024)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipe: %v", err)
+		return nil, fmt.Errorf("failed to create outpipe: %v", err)
 	}
-	defer inwp.Close()
+	// defer inwp.Close()
 	c.inrp = inrp
 
 	// ipc->executor command pipe.
-	outrp, outwp, err := os.Pipe()
+	outwf, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_inpipe_0", 128 * 1024)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipe: %v", err)
+		return nil, fmt.Errorf("failed to create inpipe: %v", err)
 	}
-	defer outrp.Close()
-	c.outwp = outwp
+	c.outwp = outwf
 
 	c.readDone = make(chan []byte, 1)
 	c.exited = make(chan struct{})
 
-	cmd := osutil.Command(bin[0], bin[1:]...)
-	if inFile != nil && outFile != nil {
-		cmd.ExtraFiles = []*os.File{inFile, outFile}
-	}
-	cmd.Env = []string{}
-	cmd.Dir = dir
-	cmd.Stdin = outrp
-	cmd.Stdout = inwp
+	// cmd := osutil.Command(bin[0], bin[1:]...)
+	// if inFile != nil && outFile != nil {
+	// 	cmd.ExtraFiles = []*os.File{inFile, outFile}
+	// }
+	// cmd.Env = []string{}
+	// cmd.Dir = dir
+	// cmd.Stdin = outrp
+	// cmd.Stdout = inwp
 	if config.Flags&FlagDebug != 0 {
 		close(c.readDone)
-		cmd.Stderr = os.Stdout
+		// cmd.Stderr = os.Stdout
 	} else if config.Flags&FlagUseForkServer == 0 {
 		close(c.readDone)
 		// TODO: read out output after execution failure.
 	} else {
-		cmd.Stderr = wp
+		// cmd.Stderr = wp
 		go func(c *command) {
 			// Read out output in case executor constantly prints something.
 			bufSize := c.config.BufferSize
@@ -620,12 +620,12 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 			}
 		}(c)
 	}
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start executor binary: %v", err)
-	}
-	c.cmd = cmd
+	// if err := cmd.Start(); err != nil {
+	// 	return nil, fmt.Errorf("failed to start executor binary: %v", err)
+	// }
+	c.cmd = nil
 	wp.Close()
-	inwp.Close()
+	// inwp.Close()
 
 	if c.config.Flags&FlagUseForkServer != 0 {
 		if err := c.handshake(); err != nil {
@@ -660,21 +660,33 @@ func (c *command) handshake() error {
 		pid:   uint64(c.pid),
 	}
 	reqData := (*[unsafe.Sizeof(*req)]byte)(unsafe.Pointer(req))[:]
+	c.outwp.Seek(0, 0) // always start at position 0 to simulate a pipe
 	if _, err := c.outwp.Write(reqData); err != nil {
 		return c.handshakeError(fmt.Errorf("failed to write control pipe: %v", err))
 	}
 
 	read := make(chan error, 1)
 	go func() {
-		reply := &handshakeReply{}
-		replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
-		if _, err := io.ReadFull(c.inrp, replyData); err != nil {
-			read <- err
-			return
-		}
-		if reply.magic != outMagic {
-			read <- fmt.Errorf("bad handshake reply magic 0x%x", reply.magic)
-			return
+		for {
+			reply := &handshakeReply{}
+			replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
+			c.inrp.Seek(0,0)
+			if _, err := io.ReadFull(c.inrp, replyData); err != nil {
+				read <- err
+
+				c.inrp.Seek(0,0)
+				emptyReply := &handshakeReply{
+					magic: 0,
+				}
+				emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
+				c.inrp.Write(emptyReplyData) // after reading, set magic to be 0 so that we could distinguish if it's a new message
+
+				return
+			}
+			if reply.magic == outMagic {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
 		}
 		read <- nil
 	}()
@@ -744,6 +756,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		progSize:  uint64(len(progData)),
 	}
 	reqData := (*[unsafe.Sizeof(*req)]byte)(unsafe.Pointer(req))[:]
+	c.outwp.Seek(0,0)
 	if _, err := c.outwp.Write(reqData); err != nil {
 		output = <-c.readDone
 		err0 = fmt.Errorf("executor %v: failed to write control pipe: %v", c.pid, err)
@@ -779,26 +792,53 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		<-hang
 		exitStatus = osutil.ProcessExitStatus(c.cmd.ProcessState)
 	} else {
-		reply := &executeReply{}
-		replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
-		_, readErr := io.ReadFull(c.inrp, replyData)
-		close(done)
-		if readErr == nil {
-			if reply.magic != outMagic {
-				panic(fmt.Sprintf("executor %v: got bad reply magic 0x%x", c.pid, reply.magic))
+		for {
+			reply := &executeReply{}
+			replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
+			c.inrp.Seek(0,0)
+			_, err := io.ReadFull(c.inrp, replyData)
+			if err != nil {
+				break	
 			}
-			if reply.done == 0 {
-				// TODO: call completion/coverage over the control pipe is not supported yet.
-				panic(fmt.Sprintf("executor %v: got call reply", c.pid))
+			if (reply.magic == outMagic) {
+				if reply.done == 0 {
+					// TODO: call completion/coverage over the control pipe is not supported yet.
+					panic(fmt.Sprintf("executor %v: got call reply", c.pid))
+				}
+				if reply.status == 0 {
+					// Program was OK.
+					c.inrp.Seek(0,0)
+					emptyReply := &executeReply{
+						magic: 0,
+						status: 0,
+						done: 0,
+					}
+					emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
+					c.inrp.Write(emptyReplyData)
+					<-hang
+					return
+				}	
+				break
 			}
-			if reply.status == 0 {
-				// Program was OK.
-				<-hang
-				return
-			}
-			// Executor writes magic values into the pipe before exiting,
-			// so proceed with killing and joining it.
+			time.Sleep(100 * time.Millisecond)
 		}
+		close(done)
+		// if readErr == nil {
+		// 	if reply.magic != outMagic {
+		// 		panic(fmt.Sprintf("executor %v: got bad reply magic 0x%x", c.pid, reply.magic))
+		// 	}
+		// 	if reply.done == 0 {
+		// 		// TODO: call completion/coverage over the control pipe is not supported yet.
+		// 		panic(fmt.Sprintf("executor %v: got call reply", c.pid))
+		// 	}
+		// 	if reply.status == 0 {
+		// 		// Program was OK.
+		// 		<-hang
+		// 		return
+		// 	}
+		// 	// Executor writes magic values into the pipe before exiting,
+		// 	// so proceed with killing and joining it.
+		// }
 		c.abort()
 		output = <-c.readDone
 		if err := c.wait(); <-hang {

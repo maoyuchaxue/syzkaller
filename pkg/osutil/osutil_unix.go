@@ -122,6 +122,37 @@ func CreateMemMappedFile(size int) (f *os.File, mem []byte, err error) {
 	return
 }
 
+// CreateMemMappedFileWithName creates a temp file with the requested filename and maps it into memory.
+func CreateMemMappedFileWithName(filename string, max_size int) (f *os.File, mem []byte, err error) {
+	f, err = os.OpenFile(filename, os.O_RDWR, 0666)
+	if err != nil {
+		err = fmt.Errorf("failed to create temp file: %v", err)
+		return
+	}
+	if err = f.Truncate(int64(max_size)); err != nil {
+		err = fmt.Errorf("failed to truncate shm file: %v", err)
+		f.Close()
+		os.Remove(f.Name())
+		return
+	}
+	f.Close()
+	fname := f.Name()
+	f, err = os.OpenFile(f.Name(), os.O_RDWR, DefaultFilePerm)
+	if err != nil {
+		err = fmt.Errorf("failed to open shm file: %v", err)
+		os.Remove(fname)
+		return
+	}
+	mem, err = syscall.Mmap(int(f.Fd()), 0, max_size, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	if err != nil {
+		err = fmt.Errorf("failed to mmap shm file: %v", err)
+		f.Close()
+		os.Remove(f.Name())
+		return
+	}
+	return
+}
+
 // CloseMemMappedFile destroys memory mapping created by CreateMemMappedFile.
 func CloseMemMappedFile(f *os.File, mem []byte) error {
 	err1 := syscall.Munmap(mem)
