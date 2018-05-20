@@ -195,6 +195,12 @@ var oses = map[string]os{
 		ExecutorUsesShmem:      false,
 		ExecutorUsesForkServer: false,
 	},
+	"ucore": {
+		SyscallNumbers:         true,
+		SyscallPrefix:          "",
+		ExecutorUsesShmem:      true,
+		ExecutorUsesForkServer: false,
+	},
 }
 
 func init() {

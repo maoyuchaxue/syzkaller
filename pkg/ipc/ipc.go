@@ -477,6 +477,7 @@ type command struct {
 	exited   chan struct{}
 	inrp     *os.File
 	outwp    *os.File
+	magic_offset uint64
 }
 
 const (
@@ -539,6 +540,7 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 		config:  config,
 		timeout: sanitizeTimeout(config),
 		dir:     dir,
+		magic_offset: 0,
 	}
 	defer func() {
 		if c != nil {
@@ -747,7 +749,7 @@ func (c *command) wait() error {
 func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, hanged,
 	restart bool, err0 error) {
 	req := &executeReq{
-		magic:     inMagic,
+		magic:     inMagic + c.magic_offset,
 		envFlags:  uint64(c.config.Flags),
 		execFlags: uint64(opts.Flags),
 		pid:       uint64(c.pid),
@@ -755,6 +757,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		faultNth:  uint64(opts.FaultNth),
 		progSize:  uint64(len(progData)),
 	}
+	c.magic_offset = c.magic_offset + 1
 	reqData := (*[unsafe.Sizeof(*req)]byte)(unsafe.Pointer(req))[:]
 	c.outwp.Seek(0,0)
 	if _, err := c.outwp.Write(reqData); err != nil {
@@ -818,6 +821,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 					<-hang
 					return
 				}	
+				exitStatus = int(reply.status)
 				break
 			}
 			time.Sleep(100 * time.Millisecond)
@@ -848,7 +852,6 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 			output = append(output, []byte(err.Error())...)
 			output = append(output, '\n')
 		}
-		exitStatus = int(reply.status)
 	}
 	// Handle magic values returned by executor.
 	switch exitStatus {
