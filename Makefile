@@ -25,7 +25,7 @@ BUILDOS := $(shell go env GOOS)
 BUILDARCH := $(shell go env GOARCH)
 HOSTOS ?= $(BUILDOS)
 HOSTARCH ?= $(BUILDARCH)
-TARGETOS ?= $(HOSTOS)
+TARGETOS ?= ucore
 TARGETARCH ?= $(HOSTARCH)
 TARGETVMARCH ?= $(TARGETARCH)
 GO := go
@@ -132,24 +132,25 @@ host:
 	$(MAKE) manager repro mutate prog2c db parse upgrade
 
 target:
-	GOOS=$(TARGETOS) GOARCH=$(TARGETVMARCH) $(GO) install ./syz-fuzzer
+	GOOS=$(HOSTOS) GOARCH=$(TARGETVMARCH) $(GO) install ./syz-fuzzer
 	$(MAKE) fuzzer execprog stress executor
 
 # executor uses stacks of limited size, so no jumbo frames.
 executor:
 	mkdir -p ./bin/$(TARGETOS)_$(TARGETARCH)
-	$(CC) -o ./bin/$(TARGETOS)_$(TARGETARCH)/syz-executor$(EXE) executor/executor_$(TARGETOS).cc \
+	# fake executor, only used for check in manager
+	$(CC) -o ./bin/$(TARGETOS)_$(TARGETARCH)/syz-executor$(EXE) executor/executor_$(HOSTOS).cc \
 		-pthread -Wall -Wframe-larger-than=8192 -Wparentheses -Werror -O2 \
-		$(ADDCFLAGS) $(CFLAGS) -DGOOS=\"$(TARGETOS)\" -DGIT_REVISION=\"$(REV)\"
+		$(ADDCFLAGS) $(CFLAGS) -DGOOS=\"$(HOSTOS)\" -DGIT_REVISION=\"$(REV)\"
 
 manager:
 	GOOS=$(HOSTOS) GOARCH=$(HOSTARCH) $(GO) build $(GOFLAGS) -o ./bin/syz-manager github.com/google/syzkaller/syz-manager
 
 fuzzer:
-	GOOS=$(TARGETOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-fuzzer$(EXE) github.com/google/syzkaller/syz-fuzzer
+	GOOS=$(HOSTOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-fuzzer$(EXE) github.com/google/syzkaller/syz-fuzzer
 
 execprog:
-	GOOS=$(TARGETOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-execprog$(EXE) github.com/google/syzkaller/tools/syz-execprog
+	GOOS=$(HOSTOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-execprog$(EXE) github.com/google/syzkaller/tools/syz-execprog
 
 ci:
 	GOOS=$(HOSTOS) GOARCH=$(HOSTARCH) $(GO) build $(GOFLAGS) -o ./bin/syz-ci github.com/google/syzkaller/syz-ci
@@ -167,7 +168,7 @@ prog2c:
 	GOOS=$(HOSTOS) GOARCH=$(HOSTARCH) $(GO) build $(GOFLAGS) -o ./bin/syz-prog2c github.com/google/syzkaller/tools/syz-prog2c
 
 stress:
-	GOOS=$(TARGETOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-stress$(EXE) github.com/google/syzkaller/tools/syz-stress
+	GOOS=$(HOSTOS) GOARCH=$(TARGETVMARCH) $(GO) build $(GOFLAGS) -o ./bin/$(TARGETOS)_$(TARGETVMARCH)/syz-stress$(EXE) github.com/google/syzkaller/tools/syz-stress
 
 db:
 	GOOS=$(HOSTOS) GOARCH=$(HOSTARCH) $(GO) build $(GOFLAGS) -o ./bin/syz-db github.com/google/syzkaller/tools/syz-db
@@ -179,7 +180,7 @@ upgrade:
 	GOOS=$(HOSTOS) GOARCH=$(HOSTARCH) $(GO) build $(GOFLAGS) -o ./bin/syz-upgrade github.com/google/syzkaller/tools/syz-upgrade
 
 extract: bin/syz-extract
-	bin/syz-extract -build -os=$(TARGETOS) -sourcedir=$(SOURCEDIR)
+	bin/syz-extract -build -os=$(HOSTOS) -sourcedir=$(SOURCEDIR)
 bin/syz-extract:
 	$(GO) build $(GOFLAGS) -o $@ ./sys/syz-extract
 

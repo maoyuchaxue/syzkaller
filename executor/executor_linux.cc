@@ -52,7 +52,9 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+    //父进程一旦去世，则给子进程一个SIGKILL
 	prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0);
+
 	if (mmap(&input_data[0], kMaxInput, PROT_READ, MAP_PRIVATE | MAP_FIXED, kInFd, 0) != &input_data[0])
 		fail("mmap of input file failed");
 	// The output region is the only thing in executor process for which consistency matters.
