@@ -251,7 +251,6 @@ func (inst *instance) Boot() error {
 		"-display", "none",
 		"-serial", "stdio",
 		"-no-reboot",
-		"-s",
 	}
 	args = append(args, strings.Split(inst.cfg.Qemu_Args, " ")...)
 	if inst.image == "9p" {
@@ -493,10 +492,10 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 				log.Logf(0, "inst get cmd error: %v", cmdErr)
 				log.Logf(0, "inst get error: %v", err)
 				cmd.Process.Kill()
+				return
 			}
 
 			signal(err)
-			return
 		}
 		cmd.Wait()
 	}()
