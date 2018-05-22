@@ -249,7 +249,7 @@ func (inst *instance) Boot() error {
 		"-net", "nic",
 		"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port+1),
 		"-display", "none",
-		"-serial", "stdio",
+		"-serial", "file:serial.log",
 		"-no-reboot",
 		"-s",
 	}

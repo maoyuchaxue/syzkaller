@@ -71,6 +71,9 @@ var (
 		" in error conditions; upgrades to SIGKILL if executor does not exit")
 	flagBufferSize = flag.Uint64("buffer_size", 0, "internal buffer size (in bytes) for executor output")
 	flagIPC        = flag.String("ipc", "", "ipc scheme (pipe/shmem)")
+	magic_offset = uint64(0)
+	out_magic_offset = uint32(0)
+
 )
 
 type ExecOpts struct {
@@ -313,6 +316,7 @@ func (env *Env) Exec(opts *ExecOpts, p *prog.Prog) (output []byte, info []CallIn
 	}
 	var restart bool
 	output, failed, hanged, restart, err0 = env.cmd.exec(opts, progData)
+	log.Logf(0, "exec finished")
 	if err0 != nil || restart {
 		env.cmd.close()
 		env.cmd = nil
@@ -326,6 +330,7 @@ func (env *Env) Exec(opts *ExecOpts, p *prog.Prog) (output []byte, info []CallIn
 }
 
 func (env *Env) readOutCoverage(p *prog.Prog) (info []CallInfo, err0 error) {
+	log.Logf(0, "read out coverage")
 	out := ((*[1 << 28]uint32)(unsafe.Pointer(&env.out[0])))[:len(env.out)/int(unsafe.Sizeof(uint32(0)))]
 	readOut := func(v *uint32) bool {
 		if len(out) == 0 {
@@ -477,7 +482,6 @@ type command struct {
 	exited       chan struct{}
 	inrp         *os.File
 	outwp        *os.File
-	magic_offset uint64
 }
 
 const (
@@ -540,7 +544,6 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 		config:       config,
 		timeout:      sanitizeTimeout(config),
 		dir:          dir,
-		magic_offset: 0,
 	}
 	defer func() {
 		if c != nil {
@@ -680,13 +683,9 @@ func (c *command) handshake() error {
 				return
 			}
 			log.Logf(0, "handshaking, reply.magic %v", reply.magic)
-			if reply.magic == outMagic {
-				c.inrp.Seek(0, 0)
-				emptyReply := &handshakeReply{
-					magic: 0,
-				}
-				emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
-				c.inrp.Write(emptyReplyData) // after reading, set magic to be 0 so that we could distinguish if it's a new message
+			if reply.magic == outMagic + out_magic_offset {
+				out_magic_offset = out_magic_offset + 1
+				// after reading, set magic to be magic+1 so that we could distinguish if it's a new message
 				break
 			}
 			time.Sleep(100 * time.Millisecond)
@@ -737,20 +736,20 @@ func (c *command) abort() {
 }
 
 func (c *command) wait() error {
-	err := c.cmd.Wait()
-	select {
-	case <-c.exited:
-		// c.exited closed by an earlier call to wait.
-	default:
-		close(c.exited)
-	}
-	return err
+	//err := c.cmd.Wait()
+	//select {
+	//case <-c.exited:
+	//	// c.exited closed by an earlier call to wait.
+	//default:
+	//	close(c.exited)
+	//}
+	return nil
 }
 
 func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, hanged,
 	restart bool, err0 error) {
 	req := &executeReq{
-		magic:     inMagic + c.magic_offset,
+		magic:     inMagic + magic_offset,
 		envFlags:  uint64(c.config.Flags),
 		execFlags: uint64(opts.Flags),
 		pid:       uint64(c.pid),
@@ -758,9 +757,9 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		faultNth:  uint64(opts.FaultNth),
 		progSize:  uint64(len(progData)),
 	}
-	c.magic_offset = c.magic_offset + 1
+	magic_offset = magic_offset + 1
 	reqData := (*[unsafe.Sizeof(*req)]byte)(unsafe.Pointer(req))[:]
-	log.Logf(0, "send prog magic_offset: %v, prog size: %v", c.magic_offset, len(progData))
+	log.Logf(0, "send prog magic_offset: %v, prog size: %v", magic_offset, len(progData))
 	c.outwp.Seek(0, 0)
 	if _, err := c.outwp.Write(reqData); err != nil {
 		output = <-c.readDone
@@ -792,7 +791,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 	var exitStatus int
 	if c.config.Flags&FlagUseForkServer == 0 {
 		restart = true
-		c.cmd.Wait()
+		//c.cmd.Wait()
 		close(done)
 		<-hang
 		exitStatus = osutil.ProcessExitStatus(c.cmd.ProcessState)
@@ -802,25 +801,20 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 			replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
 			c.inrp.Seek(0, 0)
 			_, err := io.ReadFull(c.inrp, replyData)
-			log.Logf(0, "reply data: magic %v, done %v, status %v", reply.magic, reply.done, reply.status)
+			//log.Logf(0, "reply data: magic %v, done %v, status %v", reply.magic, reply.done, reply.status)
 			if err != nil {
 				break
 			}
-			if reply.magic == outMagic {
+			if reply.magic == outMagic + out_magic_offset {
 				if reply.done == 0 {
 					// TODO: call completion/coverage over the control pipe is not supported yet.
 					panic(fmt.Sprintf("executor %v: got call reply", c.pid))
 				}
 				if reply.status == 0 {
 					// Program was OK.
-					c.inrp.Seek(0, 0)
-					emptyReply := &executeReply{
-						magic:  0,
-						status: 0,
-						done:   0,
-					}
-					emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
-					c.inrp.Write(emptyReplyData)
+					done <- true
+					out_magic_offset = out_magic_offset + 1
+					log.Logf(0, "exec for inner finished")
 					<-hang
 					return
 				}
@@ -846,7 +840,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		// 	// Executor writes magic values into the pipe before exiting,
 		// 	// so proceed with killing and joining it.
 		// }
-		c.abort()
+		//c.abort()
 		output = <-c.readDone
 		if err := c.wait(); <-hang {
 			hanged = true

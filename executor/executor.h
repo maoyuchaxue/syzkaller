@@ -4,9 +4,9 @@
 #include <algorithm>
 #include <errno.h>
 #include <signal.h>
-#include <stdarg.h>
+#include <stdarg.h> // not found
 #include <stddef.h>
-#include <stdint.h>
+#include <stdint.h> // not found
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
