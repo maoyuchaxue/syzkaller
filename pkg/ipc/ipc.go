@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
-
+	"github.com/google/syzkaller/pkg/log"
 	"github.com/google/syzkaller/pkg/host"
 	"github.com/google/syzkaller/pkg/osutil"
 	"github.com/google/syzkaller/prog"
@@ -656,6 +656,7 @@ func (c *command) close() {
 
 // handshake sends handshakeReq and waits for handshakeReply (sandbox setup can take significant time).
 func (c *command) handshake() error {
+	log.Logf(0, "handshaking")
 	req := &handshakeReq{
 		magic: inMagic,
 		flags: uint64(c.config.Flags),
@@ -688,6 +689,7 @@ func (c *command) handshake() error {
 			if reply.magic == outMagic {
 				break
 			}
+			log.Logf(0, "handshaking, reply.magic %v", reply.magic)
 			time.Sleep(100 * time.Millisecond)
 		}
 		read <- nil
