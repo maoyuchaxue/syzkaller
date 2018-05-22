@@ -593,7 +593,7 @@ func (mgr *Manager) runInstance(index int) (*Crash, error) {
 	// 	fuzzerBin, executorBin, index, mgr.cfg.TargetArch, fwdAddr, procs,
 	// 	leak, mgr.cfg.Cover, mgr.cfg.Sandbox, *flagDebug, fuzzerV)
 	cmd := fmt.Sprintf("%v -executor=%v -name=vm-%v -arch=%v -os=%v -manager=%v -procs=%v"+
-		" -leak=%v -cover=%v -sandbox=%v -debug=true -v=%d",
+		" -leak=%v -cover=%v -sandbox=%v -debug=true -threaded=0 -v=%d",
 		fuzzerBin, executorBin, index, mgr.cfg.TargetArch, mgr.cfg.TargetOS, fwdAddr, procs,
 		leak, mgr.cfg.Cover, mgr.cfg.Sandbox, fuzzerV)
 

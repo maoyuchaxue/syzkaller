@@ -7,6 +7,11 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/google/syzkaller/pkg/host"
+	"github.com/google/syzkaller/pkg/log"
+	"github.com/google/syzkaller/pkg/osutil"
+	"github.com/google/syzkaller/prog"
+	"github.com/google/syzkaller/sys/targets"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,11 +23,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
-	"github.com/google/syzkaller/pkg/log"
-	"github.com/google/syzkaller/pkg/host"
-	"github.com/google/syzkaller/pkg/osutil"
-	"github.com/google/syzkaller/prog"
-	"github.com/google/syzkaller/sys/targets"
 )
 
 // Configuration flags for Config.Flags.
@@ -194,7 +194,7 @@ func MakeEnv(config *Config, pid int) (*Env, error) {
 	var inmem, outmem []byte
 	if config.Flags&FlagUseShmem != 0 {
 		var err error
-		inf, inmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_payload_0", 16 * 1024 * 1024)
+		inf, inmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_payload_0", 16*1024*1024)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,7 @@ func MakeEnv(config *Config, pid int) (*Env, error) {
 				osutil.CloseMemMappedFile(inf, inmem)
 			}
 		}()
-		outf, outmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_coverage_0", 16 * 1024 * 1024)
+		outf, outmem, err = osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_coverage_0", 16*1024*1024)
 		if err != nil {
 			return nil, err
 		}
@@ -468,15 +468,15 @@ func (env *Env) readOutCoverage(p *prog.Prog) (info []CallInfo, err0 error) {
 }
 
 type command struct {
-	pid      int
-	config   *Config
-	timeout  time.Duration
-	cmd      *exec.Cmd
-	dir      string
-	readDone chan []byte
-	exited   chan struct{}
-	inrp     *os.File
-	outwp    *os.File
+	pid          int
+	config       *Config
+	timeout      time.Duration
+	cmd          *exec.Cmd
+	dir          string
+	readDone     chan []byte
+	exited       chan struct{}
+	inrp         *os.File
+	outwp        *os.File
 	magic_offset uint64
 }
 
@@ -536,10 +536,10 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 	}
 
 	c := &command{
-		pid:     pid,
-		config:  config,
-		timeout: sanitizeTimeout(config),
-		dir:     dir,
+		pid:          pid,
+		config:       config,
+		timeout:      sanitizeTimeout(config),
+		dir:          dir,
 		magic_offset: 0,
 	}
 	defer func() {
@@ -563,7 +563,7 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 
 	// executor->ipc command pipe.
 	// inrp, inwp, err := os.Pipe()
-	inrp, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_outpipe_0", 128 * 1024)
+	inrp, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_outpipe_0", 128*1024)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create outpipe: %v", err)
 	}
@@ -571,7 +571,7 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 	c.inrp = inrp
 
 	// ipc->executor command pipe.
-	outwf, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_inpipe_0", 128 * 1024)
+	outwf, _, err := osutil.CreateMemMappedFileWithName("/dev/shm/kafl_qemu_inpipe_0", 128*1024)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inpipe: %v", err)
 	}
@@ -673,23 +673,22 @@ func (c *command) handshake() error {
 		for {
 			reply := &handshakeReply{}
 			replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
-			c.inrp.Seek(0,0)
+			c.inrp.Seek(0, 0)
 			if _, err := io.ReadFull(c.inrp, replyData); err != nil {
 				read <- err
 
-				c.inrp.Seek(0,0)
+				return
+			}
+			log.Logf(0, "handshaking, reply.magic %v", reply.magic)
+			if reply.magic == outMagic {
+				c.inrp.Seek(0, 0)
 				emptyReply := &handshakeReply{
 					magic: 0,
 				}
 				emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
 				c.inrp.Write(emptyReplyData) // after reading, set magic to be 0 so that we could distinguish if it's a new message
-
-				return
-			}
-			if reply.magic == outMagic {
 				break
 			}
-			log.Logf(0, "handshaking, reply.magic %v", reply.magic)
 			time.Sleep(100 * time.Millisecond)
 		}
 		read <- nil
@@ -761,7 +760,8 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 	}
 	c.magic_offset = c.magic_offset + 1
 	reqData := (*[unsafe.Sizeof(*req)]byte)(unsafe.Pointer(req))[:]
-	c.outwp.Seek(0,0)
+	log.Logf(0, "send prog magic_offset: %v, prog size: %v", c.magic_offset, len(progData))
+	c.outwp.Seek(0, 0)
 	if _, err := c.outwp.Write(reqData); err != nil {
 		output = <-c.readDone
 		err0 = fmt.Errorf("executor %v: failed to write control pipe: %v", c.pid, err)
@@ -800,29 +800,30 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 		for {
 			reply := &executeReply{}
 			replyData := (*[unsafe.Sizeof(*reply)]byte)(unsafe.Pointer(reply))[:]
-			c.inrp.Seek(0,0)
+			c.inrp.Seek(0, 0)
 			_, err := io.ReadFull(c.inrp, replyData)
+			log.Logf(0, "reply data: magic %v, done %v, status %v", reply.magic, reply.done, reply.status)
 			if err != nil {
-				break	
+				break
 			}
-			if (reply.magic == outMagic) {
+			if reply.magic == outMagic {
 				if reply.done == 0 {
 					// TODO: call completion/coverage over the control pipe is not supported yet.
 					panic(fmt.Sprintf("executor %v: got call reply", c.pid))
 				}
 				if reply.status == 0 {
 					// Program was OK.
-					c.inrp.Seek(0,0)
+					c.inrp.Seek(0, 0)
 					emptyReply := &executeReply{
-						magic: 0,
+						magic:  0,
 						status: 0,
-						done: 0,
+						done:   0,
 					}
 					emptyReplyData := (*[unsafe.Sizeof(*emptyReply)]byte)(unsafe.Pointer(emptyReply))[:]
 					c.inrp.Write(emptyReplyData)
 					<-hang
 					return
-				}	
+				}
 				exitStatus = int(reply.status)
 				break
 			}

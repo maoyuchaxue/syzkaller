@@ -249,8 +249,9 @@ func (inst *instance) Boot() error {
 		"-net", "nic",
 		"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port+1),
 		"-display", "none",
-		"-serial", "file:serial.log",
+		"-serial", "stdio",
 		"-no-reboot",
+		"-s",
 	}
 	args = append(args, strings.Split(inst.cfg.Qemu_Args, " ")...)
 	if inst.image == "9p" {

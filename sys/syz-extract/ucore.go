@@ -27,7 +27,8 @@ func (*ucore) processFile(arch *Arch, info *compiler.ConstInfo) (map[string]uint
 		"-I", filepath.Join(arch.sourceDir, "libs-user-ucore", "arch", "amd64"),
 		"-I", filepath.Join(arch.sourceDir, "libs-user-ucore", "common"),
 		"-I", filepath.Join(arch.sourceDir, "kern-ucore", "module", "include"),
+		"-I", arch.buildDir,
 	}
-	fmt.Printf("processfile\n")
+	fmt.Printf("processfile, %v\n", args)
 	return extract(info, "gcc", args, "", true)
 }

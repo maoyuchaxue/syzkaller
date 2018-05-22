@@ -8,7 +8,6 @@ var Target_amd64 = &Target{OS: "ucore", Arch: "amd64", Revision: revision_amd64,
 
 var resources_amd64 = []*ResourceDesc{
 	{Name: "box_t", Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}, Kind: []string{"box_t"}, Values: []uint64{0, 1, 18446744073709551615}},
-	{Name: "event_t", Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}, Kind: []string{"event_t"}, Values: []uint64{0, 1, 18446744073709551615}},
 	{Name: "fd", Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}, Kind: []string{"fd"}, Values: []uint64{18446744073709551615, 0, 100}},
 	{Name: "pid", Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}, Kind: []string{"pid"}, Values: []uint64{0, 18446744073709551615}},
 	{Name: "sem_t", Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}, Kind: []string{"sem_t"}, Values: []uint64{0, 1, 18446744073709551615}},
@@ -21,12 +20,6 @@ var structDescs_amd64 = []*KeyedStruct{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "size", TypeSize: 4}}},
 		&BufferType{TypeCommon: TypeCommon{TypeName: "array", FldName: "data", IsVarlen: true}},
 	}}},
-	{Key: StructKey{Name: "mboxbuf", Dir: 1}, Desc: &StructDesc{TypeCommon: TypeCommon{TypeName: "mboxbuf", ArgDir: 1, IsVarlen: true}, Fields: []Type{
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "from", TypeSize: 4, ArgDir: 1}}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "len", TypeSize: 4, ArgDir: 1}}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "size", TypeSize: 4, ArgDir: 1}}},
-		&BufferType{TypeCommon: TypeCommon{TypeName: "array", FldName: "data", ArgDir: 1, IsVarlen: true}},
-	}}},
 	{Key: StructKey{Name: "mboxinfo", Dir: 1}, Desc: &StructDesc{TypeCommon: TypeCommon{TypeName: "mboxinfo", TypeSize: 12, ArgDir: 1}, Fields: []Type{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "slots", TypeSize: 4, ArgDir: 1}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "max_slots", TypeSize: 4, ArgDir: 1}}},
@@ -38,95 +31,72 @@ var structDescs_amd64 = []*KeyedStruct{
 }
 
 var syscalls_amd64 = []*Syscall{
-	{Name: "open", CallName: "open", Args: []Type{
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "file", TypeSize: 8}, Type: &BufferType{TypeCommon: TypeCommon{TypeName: "filename", IsVarlen: true}, Kind: 3}},
-		&FlagsType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "open_flags", FldName: "flags", TypeSize: 8}}, Vals: []uint64{0, 1, 2, 1024, 4096, 8192, 64, 128, 256, 2048, 4096, 512}},
-	}, Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "fd", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
-	{Name: "sys_brk", CallName: "sys_brk", Args: []Type{
+	{NR: 19, Name: "SYS_brk", CallName: "SYS_brk", Args: []Type{
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "brk_store", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "intptr", TypeSize: 8, ArgDir: 1}}}},
 	}},
-	{Name: "sys_exec", CallName: "sys_exec", Args: []Type{
+	{NR: 48, Name: "SYS_event_send", CallName: "SYS_event_send", Args: []Type{
+		&ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "pid", TypeSize: 4}},
+		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "event", TypeSize: 4}}},
+		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
+	}},
+	{NR: 4, Name: "SYS_exec", CallName: "SYS_exec", Args: []Type{
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "file", TypeSize: 8}, Type: &BufferType{TypeCommon: TypeCommon{TypeName: "filename", IsVarlen: true}, Kind: 3}},
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "argv", TypeSize: 8}, Type: &ArrayType{TypeCommon: TypeCommon{TypeName: "array", IsVarlen: true}, Type: &PtrType{TypeCommon: TypeCommon{TypeName: "ptr", TypeSize: 8}, Type: &BufferType{TypeCommon: TypeCommon{TypeName: "string", IsVarlen: true}, Kind: 2}}}},
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "envp", TypeSize: 8}, Type: &ArrayType{TypeCommon: TypeCommon{TypeName: "array", IsVarlen: true}, Type: &PtrType{TypeCommon: TypeCommon{TypeName: "ptr", TypeSize: 8}, Type: &BufferType{TypeCommon: TypeCommon{TypeName: "string", IsVarlen: true}, Kind: 2}}}},
 	}},
-	{Name: "sys_exit", CallName: "sys_exit", Args: []Type{
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "intptr", FldName: "code", TypeSize: 8}}},
-	}},
-	{Name: "sys_getpid", CallName: "sys_getpid", Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
-	{Name: "sys_gettime", CallName: "sys_gettime"},
-	{Name: "sys_kill", CallName: "sys_kill", Args: []Type{
-		&ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "pid", TypeSize: 4}},
-	}},
-	{Name: "sys_mbox_free", CallName: "sys_mbox_free", Args: []Type{
+	{NR: 18, Name: "SYS_getpid", CallName: "SYS_getpid", Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
+	{NR: 17, Name: "SYS_gettime", CallName: "SYS_gettime"},
+	{NR: 53, Name: "SYS_mbox_free", CallName: "SYS_mbox_free", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "box_t", FldName: "id", TypeSize: 4}},
 	}},
-	{Name: "sys_mbox_info", CallName: "sys_mbox_info", Args: []Type{
+	{NR: 54, Name: "SYS_mbox_info", CallName: "SYS_mbox_info", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "box_t", FldName: "id", TypeSize: 4}},
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "info", TypeSize: 8}, Type: &StructType{Key: StructKey{Name: "mboxinfo", Dir: 1}}},
 	}},
-	{Name: "sys_mbox_init", CallName: "sys_mbox_init", Args: []Type{
+	{NR: 50, Name: "SYS_mbox_init", CallName: "SYS_mbox_init", Args: []Type{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "max_slots", TypeSize: 4}}},
 	}, Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "box_t", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
-	{Name: "sys_mbox_recv", CallName: "sys_mbox_recv", Args: []Type{
-		&ResourceType{TypeCommon: TypeCommon{TypeName: "box_t", FldName: "id", TypeSize: 4}},
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "buf", TypeSize: 8}, Type: &StructType{Key: StructKey{Name: "mboxbuf", Dir: 1}}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
-	}},
-	{Name: "sys_mbox_send", CallName: "sys_mbox_send", Args: []Type{
+	{NR: 51, Name: "SYS_mbox_send", CallName: "SYS_mbox_send", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "box_t", FldName: "id", TypeSize: 4}},
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "buf", TypeSize: 8}, Type: &StructType{Key: StructKey{Name: "mboxbuf"}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
 	}},
-	{Name: "sys_mmap", CallName: "sys_mmap", Args: []Type{
+	{NR: 20, Name: "SYS_mmap", CallName: "SYS_mmap", Args: []Type{
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "addr_store", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "intptr", TypeSize: 8}}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "len", TypeSize: 4}}},
 		&FlagsType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "mmap_flags", FldName: "mmap_flags", TypeSize: 8}}, Vals: []uint64{256, 512}},
 	}},
-	{Name: "sys_pgdir", CallName: "sys_pgdir"},
-	{Name: "sys_putc", CallName: "sys_putc", Args: []Type{
+	{NR: 100, Name: "SYS_open", CallName: "SYS_open", Args: []Type{
+		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "file", TypeSize: 8}, Type: &BufferType{TypeCommon: TypeCommon{TypeName: "filename", IsVarlen: true}, Kind: 3}},
+		&FlagsType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "open_flags", FldName: "flags", TypeSize: 8}}, Vals: []uint64{0, 1, 2, 1024, 4096, 8192, 64, 128, 256, 2048, 4096, 512}},
+	}, Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "fd", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
+	{NR: 31, Name: "SYS_pgdir", CallName: "SYS_pgdir"},
+	{NR: 30, Name: "SYS_putc", CallName: "SYS_putc", Args: []Type{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "c", TypeSize: 4}}},
 	}},
-	{Name: "sys_recv_event", CallName: "sys_recv_event", Args: []Type{
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "pid_store", TypeSize: 8}, Type: &ResourceType{TypeCommon: TypeCommon{TypeName: "pid", TypeSize: 4, ArgDir: 1}}},
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "event_store", TypeSize: 8}, Type: &ResourceType{TypeCommon: TypeCommon{TypeName: "event_t", TypeSize: 4, ArgDir: 1}}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
-	}},
-	{Name: "sys_sem_free", CallName: "sys_sem_free", Args: []Type{
+	{NR: 43, Name: "SYS_sem_free", CallName: "SYS_sem_free", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "sem_t", FldName: "sem_id", TypeSize: 4}},
 	}},
-	{Name: "sys_sem_get_value", CallName: "sys_sem_get_value", Args: []Type{
+	{NR: 44, Name: "SYS_sem_get_value", CallName: "SYS_sem_get_value", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "sem_t", FldName: "sem_id", TypeSize: 4}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "intptr", FldName: "value_store", TypeSize: 8}}},
 	}},
-	{Name: "sys_sem_init", CallName: "sys_sem_init", Args: []Type{
+	{NR: 40, Name: "SYS_sem_init", CallName: "SYS_sem_init", Args: []Type{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "value", TypeSize: 4}}},
 	}, Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "sem_t", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
-	{Name: "sys_sem_post", CallName: "sys_sem_post", Args: []Type{
+	{NR: 41, Name: "SYS_sem_post", CallName: "SYS_sem_post", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "sem_t", FldName: "sem_id", TypeSize: 4}},
 	}},
-	{Name: "sys_sem_wait", CallName: "sys_sem_wait", Args: []Type{
-		&ResourceType{TypeCommon: TypeCommon{TypeName: "sem_t", FldName: "sem_id", TypeSize: 4}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
-	}},
-	{Name: "sys_send_event", CallName: "sys_send_event", Args: []Type{
-		&ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "pid", TypeSize: 4}},
-		&ResourceType{TypeCommon: TypeCommon{TypeName: "event_t", FldName: "event", TypeSize: 4}},
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "timeout", TypeSize: 4}}},
-	}},
-	{Name: "sys_shmem", CallName: "sys_shmem", Args: []Type{
+	{NR: 22, Name: "SYS_shmem", CallName: "SYS_shmem", Args: []Type{
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "addr_store", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "intptr", TypeSize: 8}}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "len", TypeSize: 4}}},
 		&FlagsType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "mmap_flags", FldName: "mmap_flags", TypeSize: 8}}, Vals: []uint64{256, 512}},
 	}},
-	{Name: "sys_sleep", CallName: "sys_sleep", Args: []Type{
-		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "time", TypeSize: 4}}},
-	}},
-	{Name: "sys_wait", CallName: "sys_wait", Args: []Type{
+	{NR: 3, Name: "SYS_wait", CallName: "SYS_wait", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "pid", FldName: "pid", TypeSize: 4}},
 		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "store", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4, ArgDir: 1}}}},
 	}},
-	{Name: "sys_yield", CallName: "sys_yield"},
+	{NR: 10, Name: "SYS_yield", CallName: "SYS_yield"},
 }
 
 var consts_amd64 = []ConstValue{
@@ -144,6 +114,26 @@ var consts_amd64 = []ConstValue{
 	{Name: "O_SYNC", Value: 4096},
 	{Name: "O_TRUNC", Value: 512},
 	{Name: "O_WRONLY", Value: 1},
+	{Name: "SYS_brk", Value: 19},
+	{Name: "SYS_event_send", Value: 48},
+	{Name: "SYS_exec", Value: 4},
+	{Name: "SYS_getpid", Value: 18},
+	{Name: "SYS_gettime", Value: 17},
+	{Name: "SYS_mbox_free", Value: 53},
+	{Name: "SYS_mbox_info", Value: 54},
+	{Name: "SYS_mbox_init", Value: 50},
+	{Name: "SYS_mbox_send", Value: 51},
+	{Name: "SYS_mmap", Value: 20},
+	{Name: "SYS_open", Value: 100},
+	{Name: "SYS_pgdir", Value: 31},
+	{Name: "SYS_putc", Value: 30},
+	{Name: "SYS_sem_free", Value: 43},
+	{Name: "SYS_sem_get_value", Value: 44},
+	{Name: "SYS_sem_init", Value: 40},
+	{Name: "SYS_sem_post", Value: 41},
+	{Name: "SYS_shmem", Value: 22},
+	{Name: "SYS_wait", Value: 3},
+	{Name: "SYS_yield", Value: 10},
 }
 
-const revision_amd64 = "10a151dbb5e86ecc05669eef1b115f87da72acbc"
+const revision_amd64 = "dce9e49ca9186930b58482f3dda37026ade77a8c"

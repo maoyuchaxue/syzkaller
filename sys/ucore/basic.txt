@@ -6,40 +6,39 @@ include <mboxbuf.h>
 resource fd[int32]: 0xffffffffffffffff, 0, 100
 resource pid[int32]: 0, 0xffffffffffffffff
 
-sys_exit(code intptr)
-sys_wait(pid pid, store ptr[out, int32])
-sys_exec(file ptr[in, filename], argv ptr[in, array[ptr[in, string]]], envp ptr[in, array[ptr[in, string]]])
-sys_yield()
-sys_sleep(time int32)
-sys_kill(pid pid)
-sys_gettime()
-sys_getpid() pid
-sys_brk(brk_store ptr[out, intptr])
-sys_mmap(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
-sys_shmem(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
+SYS_wait(pid pid, store ptr[out, int32])
+SYS_exec(file ptr[in, filename], argv ptr[in, array[ptr[in, string]]], envp ptr[in, array[ptr[in, string]]])
+SYS_yield()
+# SYS_sleep(time int32)
+SYS_gettime()
+SYS_getpid() pid
+SYS_brk(brk_store ptr[out, intptr])
+SYS_mmap(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
+SYS_shmem(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
 
 mmap_flags = MMAP_WRITE, MMAP_STACK
 
-sys_putc(c int32)
-sys_pgdir() 
+SYS_putc(c int32)
+SYS_pgdir() 
 
 resource sem_t[int32]: 0, 1, 0xffffffffffffffff
-sys_sem_init(value int32) sem_t
-sys_sem_post(sem_id sem_t)
-sys_sem_wait(sem_id sem_t, timeout int32)
-sys_sem_free(sem_id sem_t)
-sys_sem_get_value(sem_id sem_t, value_store intptr)
+SYS_sem_init(value int32) sem_t
+SYS_sem_post(sem_id sem_t)
+# SYS_sem_wait(sem_id sem_t, timeout int32)
+SYS_sem_free(sem_id sem_t)
+SYS_sem_get_value(sem_id sem_t, value_store intptr)
 
-resource event_t[int32]: 0, 1, 0xffffffffffffffff
-sys_send_event(pid pid, event event_t, timeout int32)
-sys_recv_event(pid_store ptr[out, pid], event_store ptr[out, event_t], timeout int32)
+# resource event_t[int32]: 0, 1, 0xffffffffffffffff
+# SYS_event_send(pid pid, event event_t, timeout int32)
+SYS_event_send(pid pid, event int32, timeout int32)
+# SYS_event_recv(pid_store ptr[out, pid], event_store ptr[out, event_t], timeout int32)
 
 resource box_t[int32]: 0, 1, 0xffffffffffffffff
-sys_mbox_init(max_slots int32) box_t
-sys_mbox_send(id box_t, buf ptr[in, mboxbuf], timeout int32)
-sys_mbox_recv(id box_t, buf ptr[out, mboxbuf], timeout int32)
-sys_mbox_free(id box_t)
-sys_mbox_info(id box_t, info ptr[out, mboxinfo])
+SYS_mbox_init(max_slots int32) box_t
+SYS_mbox_send(id box_t, buf ptr[in, mboxbuf], timeout int32)
+# SYS_mbox_recv(id box_t, buf ptr[out, mboxbuf], timeout int32)
+SYS_mbox_free(id box_t)
+SYS_mbox_info(id box_t, info ptr[out, mboxinfo])
 
 mboxinfo {
 	slots int32
@@ -56,6 +55,6 @@ mboxbuf {
 	data array[int8]
 }
 
-open(file ptr[in, filename], flags flags[open_flags]) fd
+SYS_open(file ptr[in, filename], flags flags[open_flags]) fd
 
 open_flags = O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_FSYNC, O_ASYNC, O_CREAT, O_EXCL, O_NOCTTY, O_NONBLOCK, O_SYNC, O_TRUNC
