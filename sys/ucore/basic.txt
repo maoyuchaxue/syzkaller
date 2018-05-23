@@ -13,8 +13,8 @@ SYS_yield()
 SYS_gettime()
 SYS_getpid() pid
 SYS_brk(brk_store ptr[out, intptr])
-SYS_mmap(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
-SYS_shmem(addr_store ptr[in, intptr], len int32, mmap_flags flags[mmap_flags])
+SYS_mmap(addr_store ptr[in, intptr], len int64, mmap_flags flags[mmap_flags])
+SYS_shmem(addr_store ptr[in, intptr], len int64, mmap_flags flags[mmap_flags])
 
 mmap_flags = MMAP_WRITE, MMAP_STACK
 
@@ -41,8 +41,8 @@ SYS_mbox_free(id box_t)
 SYS_mbox_info(id box_t, info ptr[out, mboxinfo])
 
 mboxinfo {
-	slots int32
-	max_slots int32
+	slots int64
+	max_slots int64
 	inuse bool8
 	has_sender bool8
 	has_receiver bool8
@@ -50,11 +50,46 @@ mboxinfo {
 
 mboxbuf {
 	from int32
-	len int32
-	size int32
+	len int64
+	size int64
 	data array[int8]
 }
 
-SYS_open(file ptr[in, filename], flags flags[open_flags]) fd
 
 open_flags = O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_FSYNC, O_ASYNC, O_CREAT, O_EXCL, O_NOCTTY, O_NONBLOCK, O_SYNC, O_TRUNC
+
+SYS_open(file ptr[in, filename], flags flags[open_flags]) fd
+SYS_close(fd fd)
+SYS_read(fd fd, base array[int32], len int64);
+SYS_write(fd fd, base array[int32], len int64);
+SYS_seek(fd fd, pos int64, whence int32);
+SYS_fstat(fd fd, stat ptr[out, stat]);
+SYS_fsync(fd fd);
+SYS_chdir(path ptr[in, filename]);
+SYS_getcwd(buffer ptr[out, int8], len int64);
+SYS_mkdir(path ptr[in, filename]);
+SYS_link(path ptr[in, filename], path2 ptr[in, filename]);
+SYS_rename(path ptr[in, filename], path2 ptr[in, filename]);
+SYS_unlink(path ptr[in, filename]);
+SYS_getdirentry(fd fd, dirent ptr[out, dirent]);
+SYS_dup(fd fd1, fd fd2);
+SYS_pipe(fd_store ptr[out, fd]);
+SYS_mkfifo(name ptr[in, filename], flags open_flags);
+
+stat {
+    st_ino int32
+	st_mode int32
+	st_nlinks int64
+	st_blocks int64
+	st_size int64
+};
+
+dirent {
+	d_ino int64
+	offset int64
+	d_reclen int16
+	name array[int8, MY_FS_MAX_FNAME_LEN]
+};
+
+define MY_FS_MAX_FNAME_LEN FS_MAX_FNAME_LEN + 1
+
