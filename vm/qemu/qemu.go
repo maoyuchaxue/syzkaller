@@ -461,7 +461,7 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 
 	cmd := osutil.Command(name, args...)
 	cmd.Stdout = wpipe
-	cmd.Stderr = wpipe
+	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		// wpipe.Close()
 		return nil, nil, err
