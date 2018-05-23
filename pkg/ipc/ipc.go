@@ -69,11 +69,10 @@ var (
 	flagTimeout     = flag.Duration("timeout", 0, "execution timeout")
 	flagAbortSignal = flag.Int("abort_signal", 0, "initial signal to send to executor"+
 		" in error conditions; upgrades to SIGKILL if executor does not exit")
-	flagBufferSize = flag.Uint64("buffer_size", 0, "internal buffer size (in bytes) for executor output")
-	flagIPC        = flag.String("ipc", "", "ipc scheme (pipe/shmem)")
-	magic_offset = uint64(0)
+	flagBufferSize   = flag.Uint64("buffer_size", 0, "internal buffer size (in bytes) for executor output")
+	flagIPC          = flag.String("ipc", "", "ipc scheme (pipe/shmem)")
+	magic_offset     = uint64(0)
 	out_magic_offset = uint32(0)
-
 )
 
 type ExecOpts struct {
@@ -473,15 +472,15 @@ func (env *Env) readOutCoverage(p *prog.Prog) (info []CallInfo, err0 error) {
 }
 
 type command struct {
-	pid          int
-	config       *Config
-	timeout      time.Duration
-	cmd          *exec.Cmd
-	dir          string
-	readDone     chan []byte
-	exited       chan struct{}
-	inrp         *os.File
-	outwp        *os.File
+	pid      int
+	config   *Config
+	timeout  time.Duration
+	cmd      *exec.Cmd
+	dir      string
+	readDone chan []byte
+	exited   chan struct{}
+	inrp     *os.File
+	outwp    *os.File
 }
 
 const (
@@ -540,10 +539,10 @@ func makeCommand(pid int, bin []string, config *Config, inFile *os.File, outFile
 	}
 
 	c := &command{
-		pid:          pid,
-		config:       config,
-		timeout:      sanitizeTimeout(config),
-		dir:          dir,
+		pid:     pid,
+		config:  config,
+		timeout: sanitizeTimeout(config),
+		dir:     dir,
 	}
 	defer func() {
 		if c != nil {
@@ -683,7 +682,7 @@ func (c *command) handshake() error {
 				return
 			}
 			log.Logf(0, "handshaking, reply.magic %v", reply.magic)
-			if reply.magic == outMagic + out_magic_offset {
+			if reply.magic == outMagic+out_magic_offset {
 				out_magic_offset = out_magic_offset + 1
 				// after reading, set magic to be magic+1 so that we could distinguish if it's a new message
 				break
@@ -721,18 +720,19 @@ func (c *command) handshakeError(err error) error {
 
 // abort sends the abort signal to the command and then SIGKILL if wait doesn't return within 5s.
 func (c *command) abort() {
-	if osutil.ProcessSignal(c.cmd.Process, c.config.AbortSignal) {
-		return
-	}
-	go func() {
-		t := time.NewTimer(5 * time.Second)
-		select {
-		case <-t.C:
-			c.cmd.Process.Kill()
-		case <-c.exited:
-			t.Stop()
-		}
-	}()
+	// if osutil.ProcessSignal(c.cmd.Process, c.config.AbortSignal) {
+	// 	return
+	// }
+	return
+	// go func() {
+	// 	t := time.NewTimer(5 * time.Second)
+	// 	select {
+	// 	case <-t.C:
+	// 		c.cmd.Process.Kill()
+	// 	case <-c.exited:
+	// 		t.Stop()
+	// 	}
+	// }()
 }
 
 func (c *command) wait() error {
@@ -805,7 +805,7 @@ func (c *command) exec(opts *ExecOpts, progData []byte) (output []byte, failed, 
 			if err != nil {
 				break
 			}
-			if reply.magic == outMagic + out_magic_offset {
+			if reply.magic == outMagic+out_magic_offset {
 				if reply.done == 0 {
 					// TODO: call completion/coverage over the control pipe is not supported yet.
 					panic(fmt.Sprintf("executor %v: got call reply", c.pid))

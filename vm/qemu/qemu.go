@@ -492,10 +492,10 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 				log.Logf(0, "inst get cmd error: %v", cmdErr)
 				log.Logf(0, "inst get error: %v", err)
 				cmd.Process.Kill()
-				return
 			}
 
 			signal(err)
+			return
 		}
 		cmd.Wait()
 	}()

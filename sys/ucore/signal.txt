@@ -1,0 +1,28 @@
+include <syscall.h>
+include <file.h>
+include <unistd.h>
+include <mboxbuf.h>
+include <signal.h>
+
+SYS_linux_kill(pid int32, sign int32)
+
+sigprocmask_hows = SIG_BLOCK, SIG_UNBLOCK, SIG_SETMASK 
+
+sigset_t {
+	sig array[int32, _NSIG_WORDS]
+}
+
+
+sigaction_flags = SA_NOCLDSTOP, SA_NOCLDWAIT, SA_SIGINFO, SA_ONSTACK, SA_RESTART, SA_NODEFER, SA_RESETHAND
+sigaction {
+	handler	intptr
+    sa_sigaction intptr
+	mask	sigset_t
+	sa_flags	flags[sigaction_flags, intptr]
+	sa_restorer	intptr
+}
+
+SYS_linux_sigprocmask(how flags[sigprocmask_hows], set ptr[in, sigset_t], old ptr[out, sigset_t])
+SYS_linux_sigsuspend(mask int32)
+
+SYS_linux_sigaction(sig int32[1:_NSIG], act ptr[in, sigaction], oact ptr[out, sigaction])

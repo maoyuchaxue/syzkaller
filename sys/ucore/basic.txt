@@ -2,6 +2,7 @@ include <syscall.h>
 include <file.h>
 include <unistd.h>
 include <mboxbuf.h>
+include <resource.h>
 
 resource fd[int32]: 0xffffffffffffffff, 0, 100
 resource pid[int32]: 0, 0xffffffffffffffff
@@ -60,21 +61,21 @@ open_flags = O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_FSYNC, O_ASYNC, O_CREAT, O_
 
 SYS_open(file ptr[in, filename], flags flags[open_flags]) fd
 SYS_close(fd fd)
-SYS_read(fd fd, base array[int32], len int64);
-SYS_write(fd fd, base array[int32], len int64);
-SYS_seek(fd fd, pos int64, whence int32);
-SYS_fstat(fd fd, stat ptr[out, stat]);
-SYS_fsync(fd fd);
-SYS_chdir(path ptr[in, filename]);
-SYS_getcwd(buffer ptr[out, int8], len int64);
-SYS_mkdir(path ptr[in, filename]);
-SYS_link(path ptr[in, filename], path2 ptr[in, filename]);
-SYS_rename(path ptr[in, filename], path2 ptr[in, filename]);
-SYS_unlink(path ptr[in, filename]);
-SYS_getdirentry(fd fd, dirent ptr[out, dirent]);
-SYS_dup(fd fd1, fd fd2);
-SYS_pipe(fd_store ptr[out, fd]);
-SYS_mkfifo(name ptr[in, filename], flags open_flags);
+SYS_read(fd fd, base ptr[in, int32], len int64)
+SYS_write(fd fd, base ptr[out, int32], len int64)
+SYS_seek(fd fd, pos int64, whence int32)
+SYS_fstat(fd fd, stat ptr[out, stat])
+SYS_fsync(fd fd)
+SYS_chdir(path ptr[in, filename])
+SYS_getcwd(buffer ptr[out, int8], len int64)
+SYS_mkdir(path ptr[in, filename])
+SYS_link(path ptr[in, filename], path2 ptr[in, filename])
+SYS_rename(path ptr[in, filename], path2 ptr[in, filename])
+SYS_unlink(path ptr[in, filename])
+SYS_getdirentry(fd fd, dirent ptr[out, dirent])
+SYS_dup(fd1 fd, fd2 fd)
+SYS_pipe(fd_store ptr[out, fd])
+# SYS_mkfifo(name ptr[in, filename], flags flags[open_flags])
 
 stat {
     st_ino int32
@@ -82,14 +83,59 @@ stat {
 	st_nlinks int64
 	st_blocks int64
 	st_size int64
-};
+}
 
 dirent {
 	d_ino int64
 	offset int64
 	d_reclen int16
 	name array[int8, MY_FS_MAX_FNAME_LEN]
-};
+}
 
 define MY_FS_MAX_FNAME_LEN FS_MAX_FNAME_LEN + 1
 
+
+SYS_ioctl(d int32, request int32, data int64)
+
+
+prots = PROT_READ, PROT_WRITE, PROT_EXEC, PROT_SEM, PROT_NONE
+SYS_linux_mmap(addr intptr, len int64, prot flags[prots], flags flags[mmap_flags], fd fd, pgoff int64)
+
+
+rlimit_res = RLIMIT_AS, RLIMIT_CORE, RLIMIT_CPU, RLIMIT_DATA, RLIMIT_FSIZE, RLIMIT_LOCKS, RLIMIT_MEMLOCK, RLIMIT_MSGQUEUE, RLIMIT_NICE, RLIMIT_NOFILE, RLIMIT_NPROC , RLIMIT_RTPRIO, RLIMIT_SIGPENDING, RLIMIT_STACK
+SYS_linux_getrlimit(res flags[rlimit_res], limit ptr[out, linux_rlimit])
+SYS_linux_setrlimit(res flags[rlimit_res], limit ptr[in, linux_rlimit])
+
+linux_rlimit {
+	rlim_cur int32
+	rlim_max int32
+}
+
+SYS_linux_lstat(path ptr[in, filename], linux_stat_store ptr[out, linux_stat])
+
+linux_stat {
+
+    st_dev int64
+	st_ino int64
+    st_nlink int64
+
+  	st_mode int64
+	st_uid int64
+	st_gid int64
+	__pad0 int32
+
+	st_rdev int64
+	st_size int64
+	st_blksize int64
+	st_blocks int64
+
+	st_atime int32
+	st_atime_nsec int32
+	st_mtime int32
+	st_mtime_nsec int32
+	st_ctime int32
+	st_ctime_nsec int32
+	__unused1 array[int32, 3]
+}
+
+SYS_linux_waitpid(pid pid, store ptr[out, int32], options int32[0:2])
