@@ -442,11 +442,11 @@ func (inst *instance) Copy(hostSrc string) (string, error) {
 }
 
 func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command string) (<-chan []byte, <-chan error, error) {
-	rpipe, wpipe, err := osutil.LongPipe()
-	if err != nil {
-		return nil, nil, err
-	}
-	inst.merger.Add("ssh", rpipe)
+	// rpipe, wpipe, err := osutil.LongPipe()
+	// if err != nil {
+	// 	return nil, nil, err
+	// }
+	// inst.merger.Add("ssh", rpipe)
 
 	// args := append(inst.sshArgs("-p"), inst.sshuser+"@localhost", command)
 	// if inst.debug {
@@ -460,7 +460,8 @@ func (inst *instance) Run(timeout time.Duration, stop <-chan bool, command strin
 	args := cmds[1:]
 
 	cmd := osutil.Command(name, args...)
-	cmd.Stdout = wpipe
+	// cmd.Stdout = wpipe
+	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		// wpipe.Close()
