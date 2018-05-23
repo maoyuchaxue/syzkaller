@@ -124,7 +124,7 @@ func CreateMemMappedFile(size int) (f *os.File, mem []byte, err error) {
 
 // CreateMemMappedFileWithName creates a temp file with the requested filename and maps it into memory.
 func CreateMemMappedFileWithName(filename string, max_size int) (f *os.File, mem []byte, err error) {
-	f, err = os.OpenFile(filename, os.O_RDWR, 0666)
+	f, err = os.OpenFile(filename, os.O_RDWR | os.O_CREATE, 0666)
 	if err != nil {
 		err = fmt.Errorf("failed to create temp file: %v", err)
 		return
