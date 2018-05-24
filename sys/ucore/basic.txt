@@ -74,7 +74,7 @@ SYS_rename(path ptr[in, filename], path2 ptr[in, filename])
 SYS_unlink(path ptr[in, filename])
 SYS_getdirentry(fd fd, dirent ptr[out, dirent])
 SYS_dup(fd1 fd, fd2 fd)
-SYS_pipe(fd_store ptr[out, fd])
+SYS_pipe(fd_store ptr[out, array[fd, 2]])
 # SYS_mkfifo(name ptr[in, filename], flags flags[open_flags])
 
 stat {
