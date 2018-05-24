@@ -1,0 +1,39 @@
+[-m 2048 -smp 1 -net nic -net user,host=10.0.2.10,hostfwd=tcp::1570-:22 -display none -serial file:serial.log -no-reboot -enable-kvm -drive file=/home/kzf/osLab/ucore_plus/ucore/obj/sfs.img,media=disk,cache=writeback,index=2 -snapshot -device kafl,bitmap_size=0,shm0=/dev/shm/kafl_qemu_binary_0,shm1=/dev/shm/kafl_qemu_payload_0,shm2=/dev/shm/kafl_qemu_coverage_0,inpipe=/dev/shm/kafl_qemu_inpipe_0,outpipe=/dev/shm/kafl_qemu_outpipe_0,bitmap=/dev/shm/kafl_bitmap_0 -kernel /home/kzf/osLab/ucore_plus/ucore/obj/kernel.img -append console=ttyS0 vsyscall=native rodata=n oops=panic nmi_watchdog=panic panic_on_warn=1 panic=86400 ftrace_dump_on_oops=orig_cpu earlyprintk=serial net.ifnames=0 biosdevname=0 kvm-intel.nested=1 kvm-intel.unrestricted_guest=1 kvm-intel.vmm_exclusive=1 kvm-intel.fasteoi=1 kvm-intel.ept=1 kvm-intel.flexpriority=1 kvm-intel.vpid=1 kvm-intel.emulate_invalid_guest_state=1 kvm-intel.eptad=1 kvm-intel.enable_shadow_vmcs=1 kvm-intel.pml=1 kvm-intel.enable_apicv=1 ]FILE: /dev/shm/kafl_tfilter
+SIZE: 1000000, 0x7f569ec00000
+16777216 16777216
+131072 131072
+16777216 16777216
+131072 131072
+131072 131072
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF
+merger error: EOF

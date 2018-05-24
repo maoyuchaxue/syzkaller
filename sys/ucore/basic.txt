@@ -61,8 +61,8 @@ open_flags = O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_FSYNC, O_ASYNC, O_CREAT, O_
 
 SYS_open(file ptr[in, filename], flags flags[open_flags]) fd
 SYS_close(fd fd)
-SYS_read(fd fd, base ptr[in, int32], len int64)
-SYS_write(fd fd, base ptr[out, int32], len int64)
+SYS_read(fd fd, base ptr[out, int32], len int64)
+SYS_write(fd fd, base ptr[in, int32], len int64)
 SYS_seek(fd fd, pos int64, whence int32)
 SYS_fstat(fd fd, stat ptr[out, stat])
 SYS_fsync(fd fd)

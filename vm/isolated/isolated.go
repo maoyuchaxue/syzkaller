@@ -248,7 +248,7 @@ func (inst *instance) Copy(hostSrc string) (string, error) {
 	done := make(chan bool)
 	go func() {
 		select {
-		case <-time.After(3 * time.Minute):
+		case <-time.After(30 * time.Minute):
 			cmd.Process.Kill()
 		case <-done:
 		}

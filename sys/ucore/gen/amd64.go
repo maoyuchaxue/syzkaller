@@ -216,14 +216,14 @@ var syscalls_amd64 = []*Syscall{
 	}, Ret: &ResourceType{TypeCommon: TypeCommon{TypeName: "fd", FldName: "ret", TypeSize: 4, ArgDir: 1}}},
 	{NR: 31, Name: "SYS_pgdir", CallName: "SYS_pgdir"},
 	{NR: 140, Name: "SYS_pipe", CallName: "SYS_pipe", Args: []Type{
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "fd_store", TypeSize: 8}, Type: &ResourceType{TypeCommon: TypeCommon{TypeName: "fd", TypeSize: 4, ArgDir: 1}}},
+		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "fd_store", TypeSize: 8}, Type: &ArrayType{TypeCommon: TypeCommon{TypeName: "array", TypeSize: 8, ArgDir: 1}, Type: &ResourceType{TypeCommon: TypeCommon{TypeName: "fd", TypeSize: 4, ArgDir: 1}}, Kind: 1, RangeBegin: 2, RangeEnd: 2}},
 	}},
 	{NR: 30, Name: "SYS_putc", CallName: "SYS_putc", Args: []Type{
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", FldName: "c", TypeSize: 4}}},
 	}},
 	{NR: 102, Name: "SYS_read", CallName: "SYS_read", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "fd", FldName: "fd", TypeSize: 4}},
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "base", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}},
+		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "base", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4, ArgDir: 1}}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int64", FldName: "len", TypeSize: 8}}},
 	}},
 	{NR: 124, Name: "SYS_rename", CallName: "SYS_rename", Args: []Type{
@@ -262,7 +262,7 @@ var syscalls_amd64 = []*Syscall{
 	}},
 	{NR: 103, Name: "SYS_write", CallName: "SYS_write", Args: []Type{
 		&ResourceType{TypeCommon: TypeCommon{TypeName: "fd", FldName: "fd", TypeSize: 4}},
-		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "base", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4, ArgDir: 1}}}},
+		&PtrType{TypeCommon: TypeCommon{TypeName: "ptr", FldName: "base", TypeSize: 8}, Type: &IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int32", TypeSize: 4}}}},
 		&IntType{IntTypeCommon: IntTypeCommon{TypeCommon: TypeCommon{TypeName: "int64", FldName: "len", TypeSize: 8}}},
 	}},
 	{NR: 10, Name: "SYS_yield", CallName: "SYS_yield"},
@@ -362,4 +362,4 @@ var consts_amd64 = []ConstValue{
 	{Name: "_NSIG_WORDS", Value: 16},
 }
 
-const revision_amd64 = "0e919a06e9190034ab5566766892df068275fbab"
+const revision_amd64 = "52f72b332ac177d9c0799d18aa87b28a259c1c7c"

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -237,17 +236,18 @@ func (inst *instance) Boot() error {
 	for {
 		// Find an unused TCP port.
 		inst.port = rand.Intn(64<<10-1<<10) + 1<<10
-		ln, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", inst.port))
-		if err == nil {
-			ln.Close()
-			break
-		}
+		//ln, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", inst.port))
+		//if err == nil {
+		//	ln.Close()
+		//
+		//}
+		break
 	}
 	args := []string{
 		"-m", strconv.Itoa(inst.cfg.Mem),
 		"-smp", strconv.Itoa(inst.cfg.CPU),
-		"-net", "nic",
-		"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port+1),
+		//"-net", "nic",
+		//"-net", fmt.Sprintf("user,host=%v,hostfwd=tcp::%v-:22", hostAddr, inst.port+1),
 		"-display", "none",
 		"-serial", "file:serial.log",
 		"-no-reboot",
@@ -286,7 +286,7 @@ func (inst *instance) Boot() error {
 			"panic=86400",
 			"ftrace_dump_on_oops=orig_cpu",
 			"earlyprintk=serial",
-			"net.ifnames=0",
+			//"net.ifnames=0",
 			"biosdevname=0",
 			"kvm-intel.nested=1",
 			"kvm-intel.unrestricted_guest=1",
